@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Search, Download, Edit, Trash2, ShoppingCart, DollarSign } from 'lucide-react';
 import { useState } from 'react';
 import { formatearMoneda, formatearPorcentaje } from '@/lib/calculations';

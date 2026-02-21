@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Calendar, TrendingDown, Package } from 'lucide-react';
+
+import { ShoppingCart, Calendar, Package } from 'lucide-react';
 import { formatearMoneda } from '@/lib/calculations';
 
 const comprasRecientes = [

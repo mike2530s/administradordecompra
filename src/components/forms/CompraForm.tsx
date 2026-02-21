@@ -9,7 +9,7 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { ShoppingCart, Plus, Loader2, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Loader2, CheckCircle } from 'lucide-react';
 import { formatearMoneda } from '@/lib/calculations';
 import { useProductos } from '@/hooks/useProductos';
 

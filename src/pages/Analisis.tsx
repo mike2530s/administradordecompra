@@ -2,11 +2,11 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatearMoneda, formatearPorcentaje } from '@/lib/calculations';
-import { Search, Filter, ArrowUpDown, Eye, TrendingUp, TrendingDown, Package } from 'lucide-react';
+import { Search, Eye, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import {
-    BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -185,7 +185,7 @@ export default function Analisis() {
                                             <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" />
                                             <Tooltip
                                                 contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                                formatter={(value: number) => [formatearMoneda(value)]}
+                                                formatter={(value: number | undefined) => [formatearMoneda(value ?? 0)]}
                                             />
                                             <Line type="monotone" dataKey="compra" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="Compra" />
                                             <Line type="monotone" dataKey="venta" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="Venta" />
