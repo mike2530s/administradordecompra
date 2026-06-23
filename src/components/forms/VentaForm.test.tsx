@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { render, screen, waitFor, fireEvent } from '@/__tests__/utils';
+import { render, screen, waitFor } from '@/__tests__/utils';
 import VentaForm from './VentaForm';
 
 describe('VentaForm - Integracion', () => {

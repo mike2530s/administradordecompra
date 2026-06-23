@@ -9,7 +9,7 @@ export const handlers = [
   }),
 
   http.post('*/api/compras', async ({ request }) => {
-    const data = await request.json();
+    const data = await request.json() as Record<string, unknown>;
     return HttpResponse.json({ id: 3, ...data }, { status: 201 });
   }),
 
@@ -21,7 +21,7 @@ export const handlers = [
   }),
 
   http.post('*/api/ventas', async ({ request }) => {
-    const data = await request.json();
+    const data = await request.json() as Record<string, unknown>;
     return HttpResponse.json({ id: 3, ...data }, { status: 201 });
   }),
 
@@ -34,7 +34,7 @@ export const handlers = [
   }),
 
   http.post('*/api/productos', async ({ request }) => {
-    const data = await request.json();
+    const data = await request.json() as Record<string, unknown>;
     return HttpResponse.json({ id: 4, ...data }, { status: 201 });
   }),
 ];
