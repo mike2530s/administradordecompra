@@ -83,6 +83,10 @@ function AppRoutes() {
     <Routes>
       {/* Public order route accessible to any customer without login */}
       <Route path="/pedido" element={<PedidoExpress />} />
+      {/* Fallbacks for mobile keyboards with uppercase P */}
+      <Route path="/Pedido" element={<Navigate to="/pedido" replace />} />
+      <Route path="/PEDIDO" element={<Navigate to="/pedido" replace />} />
+      
       <Route path="/welcome" element={<Welcome />} />
       <Route
         path="/login"
