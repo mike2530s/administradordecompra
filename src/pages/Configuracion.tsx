@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Settings, User, Bell, LogOut, Save, Trash2, AlertTriangle, Eye, EyeOff, Moon, Sun } from 'lucide-react';
+import { Settings, User, Bell, LogOut, Save, Trash2, AlertTriangle, Eye, EyeOff, Moon, Sun, Camera } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProductos } from '@/hooks/useProductos';
 import { useTheme } from '@/hooks/useTheme';
@@ -88,6 +88,35 @@ export default function Configuracion() {
                         <Button className="rounded-xl flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)' }}>
                             <Save size={16} /> Guardar Cambios
                         </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* AI Vision Configuration (Gemini API Key) */}
+            <Card className="border-0 shadow-sm dark:bg-gray-900 dark:border-gray-800">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Camera size={20} className="text-emerald-600 dark:text-emerald-400" />
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Configuración de Escáner IA (Google Gemini)</h3>
+                            <p className="text-xs text-gray-500">Clave de API para lectura automática de notas de remisión escritas a mano</p>
+                        </div>
+                    </div>
+                    <Separator className="mb-4" />
+                    <div className="space-y-3">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold dark:text-gray-300">Google Gemini API Key (Gratis)</Label>
+                            <Input
+                                type="password"
+                                defaultValue={localStorage.getItem('gemini_api_key') || ''}
+                                onChange={e => localStorage.setItem('gemini_api_key', e.target.value.trim())}
+                                placeholder="AIzaSy..."
+                                className="rounded-xl font-mono text-xs dark:bg-gray-800 dark:border-gray-700"
+                            />
+                            <p className="text-[11px] text-gray-500">
+                                La clave se guarda de forma segura en tu navegador. Puedes obtener una gratis en <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-emerald-600 underline font-semibold">aistudio.google.com</a>.
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
