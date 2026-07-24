@@ -86,6 +86,13 @@ export default function Compras() {
         return compras.reduce((acc, c) => acc + c.totalImporte, 0);
     }, [compras]);
 
+    const totalGananciaProyectada = useMemo(() => {
+        return compras.reduce((acc, c) => {
+            const margin = Math.max(0, c.precioVenta - c.precio);
+            return acc + (margin * c.cantidad);
+        }, 0);
+    }, [compras]);
+
     // Group purchases by date for daily expenditures chart
     const dailyChartData = useMemo(() => {
         const grouped: Record<string, number> = {};
@@ -260,15 +267,15 @@ export default function Compras() {
                     </CardContent>
                 </Card>
 
-                <Card className="border border-slate-200 dark:border-gray-800 shadow-xs">
+                <Card className="border border-slate-200 dark:border-gray-800 shadow-xs bg-gradient-to-br from-amber-50/50 to-orange-50/30">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                                 <Sparkles size={22} />
                             </div>
                             <div>
-                                <p className="text-xs font-semibold text-gray-500">Lectura de IA (Tinta Azul & Negra)</p>
-                                <p className="text-xs font-bold text-emerald-600 mt-1">Columna IMPORTE Activa</p>
+                                <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Ganancia Esperada Proyectada</p>
+                                <p className="text-xl font-black text-amber-950">{formatearMoneda(totalGananciaProyectada)}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -314,13 +321,13 @@ export default function Compras() {
                 </CardContent>
             </Card>
 
-            {/* Purchases Table with IMPORTE Column */}
+            {/* Purchases Table with IMPORTE & Projected Profit Columns */}
             <Card className="border border-slate-200 dark:border-gray-800 shadow-xs">
                 <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <FileText className="w-4 h-4 text-emerald-600" />
-                            <span>Historial Completo de Compras & Importes</span>
+                            <span>Historial Completo de Compras & Proyección de Ganancias</span>
                         </h3>
                     </div>
 
@@ -331,24 +338,30 @@ export default function Compras() {
                                     <th className="text-left py-3 px-2">Fecha</th>
                                     <th className="text-left py-3 px-2">Producto / Artículo</th>
                                     <th className="text-right py-3 px-2">Cantidad</th>
-                                    <th className="text-right py-3 px-2 text-blue-700">Costo Prov. (Azul)</th>
-                                    <th className="text-right py-3 px-2 text-emerald-700">Venta Pub. ($ Negra)</th>
-                                    <th className="text-right py-3 px-2 text-slate-900 font-extrabold">IMPORTE ($)</th>
+                                    <th className="text-right py-3 px-2 text-emerald-700">Costo Compra ($ Prov.)</th>
+                                    <th className="text-right py-3 px-2 text-blue-700">Venta Púb. (Tinta Azul)</th>
+                                    <th className="text-right py-3 px-2 text-slate-900 font-extrabold">Importe Compra ($)</th>
+                                    <th className="text-right py-3 px-2 text-amber-700 font-black">Ganancia Est. ($)</th>
                                     <th className="text-left py-3 px-2 hidden md:table-cell">Origen</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {compras.map((c) => (
-                                    <tr key={c.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors">
-                                        <td className="py-3 px-2 text-gray-600">{c.fecha}</td>
-                                        <td className="py-3 px-2 font-bold text-gray-900 dark:text-gray-100">{c.producto}</td>
-                                        <td className="py-3 px-2 text-right text-gray-700 font-semibold">{c.cantidad} {c.unidad || 'kg'}</td>
-                                        <td className="py-3 px-2 text-right text-blue-700 font-bold">{formatearMoneda(c.precio)}</td>
-                                        <td className="py-3 px-2 text-right text-emerald-700 font-bold">{formatearMoneda(c.precioVenta)}</td>
-                                        <td className="py-3 px-2 text-right font-black text-slate-900 dark:text-gray-100 bg-slate-50/50 dark:bg-gray-800/50">{formatearMoneda(c.totalImporte)}</td>
-                                        <td className="py-3 px-2 text-gray-500 hidden md:table-cell text-[11px] font-medium">{c.proveedor}</td>
-                                    </tr>
-                                ))}
+                                {compras.map((c) => {
+                                    const gananciaRow = Math.max(0, c.precioVenta - c.precio) * c.cantidad;
+
+                                    return (
+                                        <tr key={c.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <td className="py-3 px-2 text-gray-600">{c.fecha}</td>
+                                            <td className="py-3 px-2 font-bold text-gray-900 dark:text-gray-100">{c.producto}</td>
+                                            <td className="py-3 px-2 text-right text-gray-700 font-semibold">{c.cantidad} {c.unidad || 'kg'}</td>
+                                            <td className="py-3 px-2 text-right text-emerald-700 font-bold">{formatearMoneda(c.precio)}</td>
+                                            <td className="py-3 px-2 text-right text-blue-700 font-bold">{formatearMoneda(c.precioVenta)}</td>
+                                            <td className="py-3 px-2 text-right font-black text-slate-900 dark:text-gray-100 bg-slate-50/50 dark:bg-gray-800/50">{formatearMoneda(c.totalImporte)}</td>
+                                            <td className="py-3 px-2 text-right font-black text-amber-700 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-950/20">+{formatearMoneda(gananciaRow)}</td>
+                                            <td className="py-3 px-2 text-gray-500 hidden md:table-cell text-[11px] font-medium">{c.proveedor}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

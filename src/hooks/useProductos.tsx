@@ -281,6 +281,11 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
     const borrarTodo = useCallback(() => {
         setProductos(productosIniciales);
         localStorage.removeItem(STORAGE_KEY);
+
+        // Delete all tables from SQLite server
+        fetch(`${SERVER_URL}/api/reset`, {
+            method: 'DELETE'
+        }).catch(() => {});
     }, []);
 
     return (

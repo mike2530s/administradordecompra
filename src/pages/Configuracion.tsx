@@ -148,30 +148,96 @@ export default function Configuracion() {
 
             {/* Notifications */}
             <Card className="border-0 shadow-sm dark:bg-gray-900 dark:border-gray-800">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-                        <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Notificaciones</h3>
+                <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Bell size={20} className="text-emerald-600 dark:text-emerald-400" />
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Notificaciones PWA</h3>
+                                <p className="text-xs text-gray-500">Alertas automáticas en pantalla y celular</p>
+                            </div>
+                        </div>
                     </div>
-                    <Separator className="mb-4" />
+                    <Separator />
+
                     <div className="space-y-3">
                         {[
                             { label: 'Alertas de stock bajo', desc: 'Cuando un producto tenga menos de 5kg', defaultChecked: true },
-                            { label: 'Resumen diario', desc: 'Email con resumen de ganancias del día', defaultChecked: true },
-                            { label: 'Alertas de pérdida', desc: 'Cuando vendas con alto margen negativo', defaultChecked: true },
-                            { label: 'Recomendaciones semanales', desc: 'Tips basados en tus datos', defaultChecked: false },
+                            { label: 'Resumen diario', desc: 'Resumen automático con ganancias del día', defaultChecked: true },
+                            { label: 'Alertas de pérdida', desc: 'Cuando vendas con alto margen negativo o merma', defaultChecked: true },
+                            { label: 'Nuevos pedidos de clientes', desc: 'Avisar cuando un cliente envíe pedido express', defaultChecked: true },
                         ].map((n, i) => (
-                            <div key={i} className="flex items-center justify-between py-2">
+                            <div key={i} className="flex items-center justify-between py-1">
                                 <div>
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{n.label}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">{n.desc}</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" defaultChecked={n.defaultChecked} className="sr-only peer" />
-                                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                 </label>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Notification Simulators */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-gray-800 space-y-2">
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <Bell className="w-4 h-4 text-amber-500" />
+                            <span>Probar y Simular Notificaciones en Celular / Pantalla:</span>
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    if ('Notification' in window && Notification.permission !== 'granted') {
+                                        Notification.requestPermission();
+                                    }
+                                    if ('Notification' in window && Notification.permission === 'granted') {
+                                        new Notification('🛒 Nuevo Pedido en Tienda', {
+                                            body: 'Doña María Pérez pidió $185 MXN (Recojo en 30 min)',
+                                            icon: '/logo.png'
+                                        });
+                                    } else {
+                                        alert('🛒 NOTIFICACIÓN: ¡Doña María Pérez envió un nuevo pedido de $185 MXN para recoger en 30 min!');
+                                    }
+                                }}
+                                className="rounded-xl text-xs font-bold border-emerald-300 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 h-9"
+                            >
+                                Simular Pedido Express
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    if ('Notification' in window && Notification.permission === 'granted') {
+                                        new Notification('⚠️ Alerta Stock Bajo', {
+                                            body: '¡Quedan solo 3.5 kg de Tomate Bola en existencia!',
+                                            icon: '/logo.png'
+                                        });
+                                    } else {
+                                        alert('⚠️ ALERTA STOCK BAJO: ¡Le quedan solo 3.5 kg de Tomate Bola en tienda!');
+                                    }
+                                }}
+                                className="rounded-xl text-xs font-bold border-amber-300 text-amber-800 dark:text-amber-300 hover:bg-amber-50 h-9"
+                            >
+                                Simular Stock Bajo
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    alert('📊 RESUMEN DIARIO: Hoy registraste $1,885.00 en compras escaneadas y $635.00 en ganancias proyectadas.');
+                                }}
+                                className="rounded-xl text-xs font-bold border-blue-300 text-blue-800 dark:text-blue-300 hover:bg-blue-50 h-9"
+                            >
+                                Simular Resumen Diario
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

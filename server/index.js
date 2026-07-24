@@ -161,6 +161,16 @@ app.delete('/api/productos/:id', (req, res) => {
   });
 });
 
+// Reset database endpoint
+app.delete('/api/reset', (req, res) => {
+  db.serialize(() => {
+    db.run(`DELETE FROM productos`);
+    db.run(`DELETE FROM compras`);
+    db.run(`DELETE FROM pedidos`);
+  });
+  res.json({ success: true, message: 'Base de Datos SQLite reiniciada' });
+});
+
 // ----------------------------------------------------
 // COMPRAS (NOTAS DE REMISIÓN) ENDPOINTS
 // ----------------------------------------------------

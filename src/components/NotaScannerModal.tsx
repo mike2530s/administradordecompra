@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Camera, Sparkles, Upload, Check, RefreshCw, FileText, Trash2, AlertCircle, Plus } from 'lucide-react';
+import { Camera, Sparkles, Upload, Check, RefreshCw, FileText, Trash2, AlertCircle, Plus, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,10 @@ export interface NotaItemExtrahido {
   nombre: string;
   cantidad: number;
   unidad: 'kg' | 'unidad' | 'atado';
-  costoCompra: number;  // Tinta azul / proveedor
-  precioVenta: number;   // Tinta negra / cliente ($)
-  totalImporte: number;  // Columna IMPORTE
+  costoCompra: number;   // Lo que pagó al proveedor (Verde / $ en nota)
+  precioVenta: number;   // Precio al que venderá al público (Azul)
+  totalImporte: number;  // Importe Total de la compra (Cantidad x Costo)
+  gananciaEstimada?: number; // Ganancia proyectada ((Venta - Costo) x Cantidad)
 }
 
 interface NotaScannerModalProps {
@@ -31,37 +32,47 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
     localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || ''
   );
   const [itemsDetectados, setItemsDetectados] = useState<NotaItemExtrahido[]>([]);
-  const [fechaNota, setFechaNota] = useState<string>('10/07/2026');
+  const [fechaNota, setFechaNota] = useState<string>('24/07/2026');
 
-  // Demo items parsed from exact real receipt in user image ($1,885.00 Total)
+  // Corrected business domain data from real receipt image:
+  // Green/Black $ = Costo Compra Proveedor (lo que le costó a la clienta)
+  // Blue number = Precio Venta Público (a lo que ella va a vender)
   const demoItemsFromReceipt: NotaItemExtrahido[] = [
-    { nombre: 'Jitomate Bola', cantidad: 13, unidad: 'kg', costoCompra: 21.00, precioVenta: 16.00, totalImporte: 208.00 },
-    { nombre: 'Cebolla (M.)', cantidad: 3, unidad: 'kg', costoCompra: 21.00, precioVenta: 16.00, totalImporte: 48.00 },
-    { nombre: 'Aguacate', cantidad: 1.5, unidad: 'kg', costoCompra: 90.00, precioVenta: 85.00, totalImporte: 128.00 },
-    { nombre: 'Papa', cantidad: 5, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 150.00 },
-    { nombre: 'Plátano', cantidad: 10.5, unidad: 'kg', costoCompra: 22.50, precioVenta: 17.50, totalImporte: 175.00 },
-    { nombre: 'Cilantro', cantidad: 1, unidad: 'atado', costoCompra: 20.00, precioVenta: 20.00, totalImporte: 20.00 },
-    { nombre: 'Tomate', cantidad: 3, unidad: 'kg', costoCompra: 21.00, precioVenta: 16.00, totalImporte: 48.00 },
-    { nombre: 'Naranja', cantidad: 4, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 120.00 },
-    { nombre: 'Piña', cantidad: 1, unidad: 'unidad', costoCompra: 30.00, precioVenta: 25.00, totalImporte: 33.00 },
-    { nombre: 'Papaya', cantidad: 1, unidad: 'unidad', costoCompra: 30.00, precioVenta: 25.00, totalImporte: 30.00 },
-    { nombre: 'Melón', cantidad: 1, unidad: 'unidad', costoCompra: 33.00, precioVenta: 28.00, totalImporte: 42.00 },
-    { nombre: 'Sandía', cantidad: 1, unidad: 'unidad', costoCompra: 25.00, precioVenta: 20.00, totalImporte: 37.00 },
-    { nombre: 'Limón', cantidad: 3.5, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 105.00 },
-    { nombre: 'Guayaba', cantidad: 2, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 60.00 },
-    { nombre: 'Serrano', cantidad: 1.5, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 45.00 },
-    { nombre: 'Poblano', cantidad: 1, unidad: 'kg', costoCompra: 40.00, precioVenta: 35.00, totalImporte: 35.00 },
-    { nombre: 'Jalapeño', cantidad: 1, unidad: 'kg', costoCompra: 30.00, precioVenta: 25.00, totalImporte: 25.00 },
-    { nombre: 'Pepino', cantidad: 2.25, unidad: 'kg', costoCompra: 35.00, precioVenta: 30.00, totalImporte: 68.00 },
-    { nombre: 'Zanahoria', cantidad: 1.5, unidad: 'kg', costoCompra: 23.00, precioVenta: 18.00, totalImporte: 27.00 },
-    { nombre: 'Lechuga', cantidad: 2, unidad: 'unidad', costoCompra: 18.00, precioVenta: 18.00, totalImporte: 36.00 },
-    { nombre: 'Calabaza', cantidad: 2.5, unidad: 'kg', costoCompra: 45.00, precioVenta: 40.00, totalImporte: 100.00 },
-    { nombre: 'Mango', cantidad: 4, unidad: 'kg', costoCompra: 43.00, precioVenta: 38.00, totalImporte: 152.00 },
-    { nombre: 'Manzana / Ciruela', cantidad: 1.5, unidad: 'kg', costoCompra: 63.00, precioVenta: 58.00, totalImporte: 93.00 },
+    { nombre: 'Jitomate Bola', cantidad: 13, unidad: 'kg', costoCompra: 16.00, precioVenta: 21.00, totalImporte: 208.00, gananciaEstimada: 65.00 },
+    { nombre: 'Cebolla (M.)', cantidad: 3, unidad: 'kg', costoCompra: 16.00, precioVenta: 21.00, totalImporte: 48.00, gananciaEstimada: 15.00 },
+    { nombre: 'Aguacate', cantidad: 1.5, unidad: 'kg', costoCompra: 85.00, precioVenta: 90.00, totalImporte: 127.50, gananciaEstimada: 7.50 },
+    { nombre: 'Papa', cantidad: 5, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 150.00, gananciaEstimada: 25.00 },
+    { nombre: 'Plátano', cantidad: 10.5, unidad: 'kg', costoCompra: 17.50, precioVenta: 22.50, totalImporte: 183.75, gananciaEstimada: 52.50 },
+    { nombre: 'Cilantro', cantidad: 1, unidad: 'atado', costoCompra: 20.00, precioVenta: 25.00, totalImporte: 20.00, gananciaEstimada: 5.00 },
+    { nombre: 'Tomate', cantidad: 3, unidad: 'kg', costoCompra: 16.00, precioVenta: 21.00, totalImporte: 48.00, gananciaEstimada: 15.00 },
+    { nombre: 'Naranja', cantidad: 4, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 120.00, gananciaEstimada: 20.00 },
+    { nombre: 'Piña', cantidad: 1, unidad: 'unidad', costoCompra: 25.00, precioVenta: 30.00, totalImporte: 25.00, gananciaEstimada: 5.00 },
+    { nombre: 'Papaya', cantidad: 1, unidad: 'unidad', costoCompra: 25.00, precioVenta: 30.00, totalImporte: 25.00, gananciaEstimada: 5.00 },
+    { nombre: 'Melón', cantidad: 1, unidad: 'unidad', costoCompra: 28.00, precioVenta: 33.00, totalImporte: 28.00, gananciaEstimada: 5.00 },
+    { nombre: 'Sandía', cantidad: 1, unidad: 'unidad', costoCompra: 20.00, precioVenta: 25.00, totalImporte: 20.00, gananciaEstimada: 5.00 },
+    { nombre: 'Limón', cantidad: 3.5, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 105.00, gananciaEstimada: 17.50 },
+    { nombre: 'Guayaba', cantidad: 2, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 60.00, gananciaEstimada: 10.00 },
+    { nombre: 'Serrano', cantidad: 1.5, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 45.00, gananciaEstimada: 7.50 },
+    { nombre: 'Poblano', cantidad: 1, unidad: 'kg', costoCompra: 35.00, precioVenta: 40.00, totalImporte: 35.00, gananciaEstimada: 5.00 },
+    { nombre: 'Jalapeño', cantidad: 1, unidad: 'kg', costoCompra: 25.00, precioVenta: 30.00, totalImporte: 25.00, gananciaEstimada: 5.00 },
+    { nombre: 'Pepino', cantidad: 2.25, unidad: 'kg', costoCompra: 30.00, precioVenta: 35.00, totalImporte: 67.50, gananciaEstimada: 11.25 },
+    { nombre: 'Zanahoria', cantidad: 1.5, unidad: 'kg', costoCompra: 18.00, precioVenta: 23.00, totalImporte: 27.00, gananciaEstimada: 7.50 },
+    { nombre: 'Lechuga', cantidad: 2, unidad: 'unidad', costoCompra: 18.00, precioVenta: 22.00, totalImporte: 36.00, gananciaEstimada: 8.00 },
+    { nombre: 'Calabaza', cantidad: 2.5, unidad: 'kg', costoCompra: 40.00, precioVenta: 45.00, totalImporte: 100.00, gananciaEstimada: 12.50 },
+    { nombre: 'Mango', cantidad: 4, unidad: 'kg', costoCompra: 38.00, precioVenta: 43.00, totalImporte: 152.00, gananciaEstimada: 20.00 },
+    { nombre: 'Manzana / Ciruela', cantidad: 1.5, unidad: 'kg', costoCompra: 58.00, precioVenta: 63.00, totalImporte: 87.00, gananciaEstimada: 7.50 },
   ];
 
-  const granTotalNota = useMemo(() => {
-    return itemsDetectados.reduce((sum, item) => sum + item.totalImporte, 0);
+  // Financial Projections
+  const granTotalInversion = useMemo(() => {
+    return itemsDetectados.reduce((sum, item) => sum + (item.cantidad * item.costoCompra), 0);
+  }, [itemsDetectados]);
+
+  const granTotalGananciaProyectada = useMemo(() => {
+    return itemsDetectados.reduce((sum, item) => {
+      const gananciaUnit = Math.max(0, item.precioVenta - item.costoCompra);
+      return sum + (gananciaUnit * item.cantidad);
+    }, 0);
   }, [itemsDetectados]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,18 +107,17 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
 
   const procesarNotaConGemini = async (base64Data: string, key: string) => {
     const prompt = `Analiza esta nota de remisión manuscrita de compra de verduras.
-    El proveedor escribió en la nota:
+    En la nota existen:
     1. Cantidades (CANT) en kilos (kg) o piezas.
     2. Nombre del artículo/verdura.
-    3. Números en azul (costo de compra del proveedor).
-    4. Precios escritos en tinta negra con signo $ (precio de venta al público de la clienta).
-    5. Columna IMPORTE (subtotal de cada renglón).
+    3. Costo de Compra al Proveedor (números en tinta negra precedidos con signo $ o el valor menor de compra).
+    4. Precio de Venta al Público (números escritos en TINTA AZUL o valor mayor al que venderá la clienta).
 
     Devuelve ÚNICAMENTE un JSON válido con esta estructura:
     {
       "fecha": "DD/MM/YYYY",
       "items": [
-        { "nombre": "Jitomate", "cantidad": 13, "unidad": "kg", "costoCompra": 21, "precioVenta": 16, "totalImporte": 208 }
+        { "nombre": "Jitomate Bola", "cantidad": 13, "unidad": "kg", "costoCompra": 16.00, "precioVenta": 21.00, "totalImporte": 208.00 }
       ]
     }`;
 
@@ -133,11 +143,19 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.fecha) setFechaNota(parsed.fecha);
         if (parsed.items) {
-          const itemsConImporte = parsed.items.map((it: any) => ({
-            ...it,
-            totalImporte: it.totalImporte || (it.cantidad * it.costoCompra)
-          }));
-          setItemsDetectados(itemsConImporte);
+          const itemsProcess = parsed.items.map((it: any) => {
+            const cComp = Number(it.costoCompra) || 0;
+            const pVent = Number(it.precioVenta) || cComp * 1.3;
+            const cant = Number(it.cantidad) || 0;
+            return {
+              ...it,
+              costoCompra: cComp,
+              precioVenta: pVent,
+              totalImporte: cant * cComp,
+              gananciaEstimada: (pVent - cComp) * cant
+            };
+          });
+          setItemsDetectados(itemsProcess);
         }
       } else {
         setItemsDetectados(demoItemsFromReceipt);
@@ -154,9 +172,11 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
     setItemsDetectados(prev => {
       const copy = [...prev];
       const updated = { ...copy[index], [key]: val };
-      if (key === 'cantidad' || key === 'costoCompra') {
-        updated.totalImporte = (updated.cantidad || 0) * (updated.costoCompra || 0);
-      }
+      const c = Number(updated.costoCompra) || 0;
+      const v = Number(updated.precioVenta) || 0;
+      const cant = Number(updated.cantidad) || 0;
+      updated.totalImporte = cant * c;
+      updated.gananciaEstimada = Math.max(0, v - c) * cant;
       copy[index] = updated;
       return copy;
     });
@@ -165,7 +185,7 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
   const addItemManual = () => {
     setItemsDetectados(prev => [
       ...prev,
-      { nombre: 'Nuevo Producto', cantidad: 1, unidad: 'kg', costoCompra: 10, precioVenta: 15, totalImporte: 10 }
+      { nombre: 'Nuevo Producto', cantidad: 1, unidad: 'kg', costoCompra: 15, precioVenta: 20, totalImporte: 15, gananciaEstimada: 5 }
     ]);
   };
 
@@ -183,11 +203,11 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[850px] rounded-3xl p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
+      <DialogContent className="sm:max-w-[900px] rounded-3xl p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white flex items-center justify-between shrink-0">
           <DialogTitle className="text-white text-base font-extrabold flex items-center gap-2">
-            <Camera className="w-5 h-5" /> Escáner de Notas de Remisión con Importes
+            <Camera className="w-5 h-5" /> Escáner de Notas & Proyección de Ganancias
             <span className="bg-amber-400 text-emerald-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
               Vision AI
             </span>
@@ -215,7 +235,7 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
                   Toma foto o sube la Nota de Remisión en Papel
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  La IA lee cantidades, productos, costo proveedor (azul), precio venta ($ negra) y la columna IMPORTE.
+                  La IA lee: <strong>Costo Proveedor ($ Compra)</strong> + <strong>Precio Venta (Tinta Azul)</strong> y calcula tu <strong>Ganancia Proyectada</strong>.
                 </p>
               </div>
 
@@ -252,7 +272,7 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Photo Preview Banner */}
+              {/* Photo Preview & Projections Header Banner */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-100 p-3 rounded-2xl border border-slate-200">
                 <div className="flex items-center space-x-3">
                   <img
@@ -270,7 +290,7 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
                       )}
                     </div>
                     <p className="text-[11px] text-slate-600">
-                      Revisa los productos e importes. Puedes corregir o agregar renglones faltantes.
+                      Revisa los costos de compra y precios de venta. La app proyecta tu ganancia neta estimada.
                     </p>
                   </div>
                 </div>
@@ -291,89 +311,103 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
                 </div>
               </div>
 
-              {/* Extracted Items Table with IMPORTE Column */}
+              {/* KPI Projection Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Inversión Compra Proveedor</p>
+                    <p className="text-lg font-black text-emerald-950">${granTotalInversion.toFixed(2)} MXN</p>
+                  </div>
+                  <FileText className="w-6 h-6 text-emerald-600 shrink-0" />
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5" /> Ganancia Esperada Proyectada
+                    </p>
+                    <p className="text-lg font-black text-amber-950">${granTotalGananciaProyectada.toFixed(2)} MXN</p>
+                  </div>
+                  <Sparkles className="w-6 h-6 text-amber-600 shrink-0" />
+                </div>
+              </div>
+
+              {/* Extracted Items Table with Corrected Business Roles */}
               {itemsDetectados.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>{itemsDetectados.length} Productos Renglón en Nota</span>
-                    </h4>
-                    <span className="text-xs font-black text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      Gran Total Importe: ${granTotalNota.toFixed(2)} MXN
-                    </span>
-                  </div>
-
-                  <div className="border border-slate-200 rounded-xl overflow-x-auto text-xs max-h-[48vh]">
-                    <table className="w-full text-left min-w-[650px]">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto text-xs max-h-[44vh]">
+                    <table className="w-full text-left min-w-[700px]">
                       <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] sticky top-0 z-10">
                         <tr>
                           <th className="py-2.5 px-2">Producto / Artículo</th>
                           <th className="py-2.5 px-2 text-center w-20">Cant.</th>
-                          <th className="py-2.5 px-2 text-right text-blue-700 w-24">Costo Prov. (Azul)</th>
-                          <th className="py-2.5 px-2 text-right text-emerald-700 w-24">Venta Pub. ($ Negra)</th>
-                          <th className="py-2.5 px-2 text-right text-slate-900 font-extrabold w-28">Importe ($)</th>
+                          <th className="py-2.5 px-2 text-right text-emerald-700 w-28">Costo Compra ($ Proveedor)</th>
+                          <th className="py-2.5 px-2 text-right text-blue-700 w-28">Precio Venta (Tinta Azul)</th>
+                          <th className="py-2.5 px-2 text-right text-slate-900 font-extrabold w-28">Importe Compra ($)</th>
+                          <th className="py-2.5 px-2 text-right text-amber-700 font-black w-28">Ganancia Est. ($)</th>
                           <th className="py-2.5 px-2 text-center w-12">Eliminar</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {itemsDetectados.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
-                            <td className="py-1.5 px-2">
-                              <input
-                                type="text"
-                                value={item.nombre}
-                                onChange={e => updateItem(idx, 'nombre', e.target.value)}
-                                className="w-full px-2 py-1 border border-slate-200 rounded font-semibold text-slate-800 text-xs"
-                              />
-                            </td>
-                            <td className="py-1.5 px-2 text-center">
-                              <input
-                                type="number"
-                                step="0.25"
-                                value={item.cantidad}
-                                onChange={e => updateItem(idx, 'cantidad', parseFloat(e.target.value) || 0)}
-                                className="w-full px-1.5 py-1 border border-slate-200 rounded font-bold text-center text-xs"
-                              />
-                            </td>
-                            <td className="py-1.5 px-2 text-right">
-                              <input
-                                type="number"
-                                step="0.5"
-                                value={item.costoCompra}
-                                onChange={e => updateItem(idx, 'costoCompra', parseFloat(e.target.value) || 0)}
-                                className="w-full px-1.5 py-1 border border-blue-200 bg-blue-50/50 rounded font-bold text-right text-blue-800 text-xs"
-                              />
-                            </td>
-                            <td className="py-1.5 px-2 text-right">
-                              <input
-                                type="number"
-                                step="0.5"
-                                value={item.precioVenta}
-                                onChange={e => updateItem(idx, 'precioVenta', parseFloat(e.target.value) || 0)}
-                                className="w-full px-1.5 py-1 border border-emerald-200 bg-emerald-50/50 rounded font-bold text-right text-emerald-800 text-xs"
-                              />
-                            </td>
-                            <td className="py-1.5 px-2 text-right">
-                              <input
-                                type="number"
-                                step="0.5"
-                                value={item.totalImporte}
-                                onChange={e => updateItem(idx, 'totalImporte', parseFloat(e.target.value) || 0)}
-                                className="w-full px-1.5 py-1 border border-slate-300 bg-slate-100 rounded font-black text-right text-slate-900 text-xs"
-                              />
-                            </td>
-                            <td className="py-1.5 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => removeItem(idx)}
-                                className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {itemsDetectados.map((item, idx) => {
+                          const subtotalComp = item.cantidad * item.costoCompra;
+                          const gananciaRow = Math.max(0, item.precioVenta - item.costoCompra) * item.cantidad;
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="py-1.5 px-2">
+                                <input
+                                  type="text"
+                                  value={item.nombre}
+                                  onChange={e => updateItem(idx, 'nombre', e.target.value)}
+                                  className="w-full px-2 py-1 border border-slate-200 rounded font-semibold text-slate-800 text-xs"
+                                />
+                              </td>
+                              <td className="py-1.5 px-2 text-center">
+                                <input
+                                  type="number"
+                                  step="0.25"
+                                  value={item.cantidad}
+                                  onChange={e => updateItem(idx, 'cantidad', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-1.5 py-1 border border-slate-200 rounded font-bold text-center text-xs"
+                                />
+                              </td>
+                              <td className="py-1.5 px-2 text-right">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={item.costoCompra}
+                                  onChange={e => updateItem(idx, 'costoCompra', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-1.5 py-1 border border-emerald-200 bg-emerald-50/50 rounded font-bold text-right text-emerald-800 text-xs"
+                                />
+                              </td>
+                              <td className="py-1.5 px-2 text-right">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={item.precioVenta}
+                                  onChange={e => updateItem(idx, 'precioVenta', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-1.5 py-1 border border-blue-200 bg-blue-50/50 rounded font-bold text-right text-blue-800 text-xs"
+                                />
+                              </td>
+                              <td className="py-1.5 px-2 text-right font-black text-slate-900">
+                                ${subtotalComp.toFixed(2)}
+                              </td>
+                              <td className="py-1.5 px-2 text-right font-black text-amber-700 bg-amber-50/40">
+                                +${gananciaRow.toFixed(2)}
+                              </td>
+                              <td className="py-1.5 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(idx)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -392,14 +426,14 @@ export const NotaScannerModal: React.FC<NotaScannerModalProps> = ({
           {itemsDetectados.length > 0 && (
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-700 hidden sm:inline">
-                Total Nota: <strong className="text-emerald-700">${granTotalNota.toFixed(2)}</strong>
+                Inversión Total: <strong className="text-emerald-700">${granTotalInversion.toFixed(2)}</strong> | Ganancia Proyectada: <strong className="text-amber-600">+${granTotalGananciaProyectada.toFixed(2)}</strong>
               </span>
               <Button
                 onClick={handleConfirmar}
                 className="rounded-xl h-10 px-5 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-md"
               >
                 <Check className="w-4 h-4" />
-                <span>Confirmar {itemsDetectados.length} Compras & Precios</span>
+                <span>Confirmar {itemsDetectados.length} Compras & Proyección</span>
               </Button>
             </div>
           )}

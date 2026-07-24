@@ -35,10 +35,25 @@ export default function Productos() {
     // Delete state
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-    const filtered = productos.filter(p =>
-        p.nombre.toLowerCase().includes(search.toLowerCase()) ||
-        (p.categoria && p.categoria.toLowerCase().includes(search.toLowerCase()))
-    );
+    const [categoriaFiltro, setCategoriaFiltro] = useState<'todos' | 'frescos' | 'abarrotes' | 'limpieza'>('todos');
+
+    const filtered = productos.filter(p => {
+        const matchesSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+            (p.categoria && p.categoria.toLowerCase().includes(search.toLowerCase()));
+
+        if (!matchesSearch) return false;
+
+        if (categoriaFiltro === 'frescos') {
+            return p.categoria === 'Verduras' || p.categoria === 'Frutas' || p.categoria === 'Tubérculos' || p.categoria === 'Chiles';
+        }
+        if (categoriaFiltro === 'abarrotes') {
+            return p.categoria === 'Abarrotes';
+        }
+        if (categoriaFiltro === 'limpieza') {
+            return p.categoria === 'Limpieza';
+        }
+        return true;
+    });
 
     const resetForm = () => {
         setNombre('');
@@ -143,6 +158,54 @@ export default function Productos() {
                     placeholder="Buscar producto o categoría..."
                     className="pl-10 rounded-xl h-11 dark:bg-gray-900 dark:border-gray-800"
                 />
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('todos')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                        categoriaFiltro === 'todos'
+                            ? 'bg-slate-900 text-white shadow-xs'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    ✨ Todo ({productos.length})
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('frescos')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                        categoriaFiltro === 'frescos'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    🥦 Verduras & Frutas
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('abarrotes')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                        categoriaFiltro === 'abarrotes'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    🛒 Abarrotes, Sopas & Chocolate
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('limpieza')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                        categoriaFiltro === 'limpieza'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    🧼 Limpieza & Jabones
+                </button>
             </div>
 
             {/* Product Grid / List */}
