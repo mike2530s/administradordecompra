@@ -24,7 +24,7 @@ export default function Productos() {
     const [precioVenta, setPrecioVenta] = useState('');
     const [unidad, setUnidad] = useState<'kg' | 'unidad' | 'atado'>('kg');
     const [imagenUrl, setImagenUrl] = useState('');
-    const [categoria, setCategoria] = useState('Verduras');
+    const [categoria, setCategoria] = useState<Producto['categoria']>('Verduras');
     const [stockKg, setStockKg] = useState('20');
     const [destacadoHoy, setDestacadoHoy] = useState(true);
 

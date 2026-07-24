@@ -1,17 +1,25 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useProductos, type Producto } from '@/hooks/useProductos';
-import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown, DollarSign, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CartItem {
     producto: Producto;
-    cantidad: number; // en kg o unidades
+    modo: 'peso' | 'pesos';
+    cantidadKg: number;
+    montoPesos: number;
+    subtotal: number;
 }
 
 export default function PedidoExpress() {
     const { productos } = useProductos();
-    const [cart, setCart] = useState<Record<string, number>>({});
-
+    
+    // Cart States
+    const [cartKg, setCartKg] = useState<Record<string, number>>({});
+    const [cartPesos, setCartPesos] = useState<Record<string, number>>({});
+    const [modoProducto, setModoProducto] = useState<Record<string, 'peso' | 'pesos'>>({});
+    const [categoriaFiltro, setCategoriaFiltro] = useState<'todos' | 'frescos' | 'abarrotes' | 'limpieza'>('todos');
+    
     // PWA Install Prompt state
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
@@ -21,12 +29,12 @@ export default function PedidoExpress() {
     const [nombre, setNombre] = useState('');
     const [telefono, setTelefono] = useState('');
     const [horaRecojoOption, setHoraRecojoOption] = useState('Lo antes posible (15-30 min)');
-
+    
     // Stylized Custom Time Picker State
     const [pickerHora, setPickerHora] = useState(2); // 1-12
     const [pickerMinuto, setPickerMinuto] = useState(30); // 0, 15, 30, 45
     const [pickerPeriodo, setPickerPeriodo] = useState<'AM' | 'PM'>('PM');
-
+    
     const [notas, setNotas] = useState('');
     const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
     const [pedidoEnviado, setPedidoEnviado] = useState(false);
@@ -84,13 +92,33 @@ export default function PedidoExpress() {
         }
     };
 
-    // Filter active/in-stock products
+    // Filter active/in-stock products by category
     const productosDisponibles = useMemo(() => {
-        return productos.filter(p => (p.stockKg ?? 10) > 0);
-    }, [productos]);
+        return productos.filter(p => {
+            const inStock = (p.stockKg ?? 10) > 0;
+            if (!inStock) return false;
 
-    const updateQuantity = (productoId: string, delta: number) => {
-        setCart(prev => {
+            if (categoriaFiltro === 'frescos') {
+                return p.categoria === 'Verduras' || p.categoria === 'Frutas' || p.categoria === 'Tubérculos' || p.categoria === 'Chiles';
+            }
+            if (categoriaFiltro === 'abarrotes') {
+                return p.categoria === 'Abarrotes';
+            }
+            if (categoriaFiltro === 'limpieza') {
+                return p.categoria === 'Limpieza';
+            }
+            return true;
+        });
+    }, [productos, categoriaFiltro]);
+
+    // Toggle mode for a product (Por Peso vs Por Dinero)
+    const toggleModo = (id: string, nuevoModo: 'peso' | 'pesos') => {
+        setModoProducto(prev => ({ ...prev, [id]: nuevoModo }));
+    };
+
+    // Update quantity in Kg
+    const updateKg = (productoId: string, delta: number) => {
+        setCartKg(prev => {
             const actual = prev[productoId] || 0;
             const producto = productos.find(p => p.id === productoId);
             const step = producto?.unidad === 'unidad' ? 1 : 0.5;
@@ -105,22 +133,70 @@ export default function PedidoExpress() {
         });
     };
 
+    // Add or set pesos amount ($10, $20, $50, $100, custom)
+    const addPesos = (productoId: string, monto: number) => {
+        setCartPesos(prev => {
+            const actual = prev[productoId] || 0;
+            const nuevo = Math.max(0, actual + monto);
+            if (nuevo === 0) {
+                const copy = { ...prev };
+                delete copy[productoId];
+                return copy;
+            }
+            return { ...prev, [productoId]: nuevo };
+        });
+    };
+
+    const setPesosDirecto = (productoId: string, montoStr: string) => {
+        const val = Math.max(0, parseFloat(montoStr) || 0);
+        setCartPesos(prev => {
+            if (val === 0) {
+                const copy = { ...prev };
+                delete copy[productoId];
+                return copy;
+            }
+            return { ...prev, [productoId]: val };
+        });
+    };
+
+    // Computed Cart Items
     const cartItems: CartItem[] = useMemo(() => {
-        return Object.entries(cart)
-            .map(([id, cantidad]) => {
-                const producto = productos.find(p => p.id === id);
-                if (!producto) return null;
-                return { producto, cantidad };
-            })
-            .filter((item): item is CartItem => item !== null);
-    }, [cart, productos]);
+        const items: CartItem[] = [];
+
+        productosDisponibles.forEach(p => {
+            const modo = modoProducto[p.id] || 'peso';
+            const cantidadKg = cartKg[p.id] || 0;
+            const montoPesos = cartPesos[p.id] || 0;
+
+            if (modo === 'peso' && cantidadKg > 0) {
+                items.push({
+                    producto: p,
+                    modo: 'peso',
+                    cantidadKg,
+                    montoPesos: 0,
+                    subtotal: p.precioVenta * cantidadKg
+                });
+            } else if (modo === 'pesos' && montoPesos > 0) {
+                const kgEquiv = p.precioVenta > 0 ? montoPesos / p.precioVenta : 0;
+                items.push({
+                    producto: p,
+                    modo: 'pesos',
+                    cantidadKg: kgEquiv,
+                    montoPesos,
+                    subtotal: montoPesos
+                });
+            }
+        });
+
+        return items;
+    }, [productosDisponibles, cartKg, cartPesos, modoProducto]);
 
     const totalOrder = useMemo(() => {
-        return cartItems.reduce((sum, item) => sum + (item.producto.precioVenta * item.cantidad), 0);
+        return cartItems.reduce((sum, item) => sum + item.subtotal, 0);
     }, [cartItems]);
 
     const totalArticulos = useMemo(() => {
-        return cartItems.reduce((sum, item) => sum + item.cantidad, 0);
+        return cartItems.length;
     }, [cartItems]);
 
     const handleSendWhatsAppOrder = (e: React.FormEvent) => {
@@ -150,9 +226,15 @@ export default function PedidoExpress() {
         message += `*VERDURAS A PREPARAR:*\n\n`;
 
         cartItems.forEach((item, index) => {
-            const subtotal = item.producto.precioVenta * item.cantidad;
-            const unidadLabel = item.producto.unidad === 'unidad' ? 'unid' : 'kg';
-            message += `${index + 1}. *${item.producto.nombre}* - ${item.cantidad} ${unidadLabel} x $${item.producto.precioVenta} = *$${subtotal.toFixed(2)}*\n`;
+            if (item.modo === 'pesos') {
+                const kgText = item.cantidadKg < 1
+                    ? `${(item.cantidadKg * 1000).toFixed(0)} gr`
+                    : `${item.cantidadKg.toFixed(2)} kg`;
+                message += `${index + 1}. *${item.producto.nombre}* - *$${item.montoPesos.toFixed(2)} MXN de verdura* (~${kgText})\n`;
+            } else {
+                const unidadLabel = item.producto.unidad === 'unidad' ? 'unid' : 'kg';
+                message += `${index + 1}. *${item.producto.nombre}* - ${item.cantidadKg} ${unidadLabel} x $${item.producto.precioVenta} = *$${item.subtotal.toFixed(2)}*\n`;
+            }
         });
 
         message += `-----------------------------------\n`;
@@ -186,7 +268,7 @@ export default function PedidoExpress() {
                                 </span>
                             </h1>
                             <p className="text-[11px] sm:text-xs text-emerald-100 flex items-center gap-1">
-                                <Store className="w-3 h-3 shrink-0" /> Pide desde tu celular y pasa a recoger sin filas.
+                                <Store className="w-3 h-3 shrink-0" /> Pide desde tu celular por Peso o por Dinero ($ Pesos).
                             </p>
                         </div>
                     </div>
@@ -236,33 +318,85 @@ export default function PedidoExpress() {
                 <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-400/5 to-transparent border-l-4 border-emerald-500 p-3 sm:p-4 rounded-r-xl shadow-xs flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
                     <div className="text-xs text-emerald-950 leading-relaxed">
-                        <span className="font-bold">Ahorra tiempo:</span> Pide desde aquí tus verduras. Nosotros las pesamos y empaquetamos para que solo llegues a **pagar y recoger al local**.
+                        <span className="font-bold">Nueva opción:</span> ¡Puedes pedir por <strong>Kilos (kg)</strong> o pedir por <strong>Dinero ($ Pesos)</strong>! Ej: *$50 pesos de papa* o *$10 pesos de chile*.
                     </div>
                 </div>
 
-                {/* Section 1: Item Cards */}
+                {/* Section 1: Item Cards with Dual Mode (Por Peso / Por Dinero) */}
                 <section className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
                             <span>1. Selecciona lo que vas a Recoger</span>
                             <span className="text-xs font-normal text-slate-500">({productosDisponibles.length})</span>
                         </h2>
+
+                        {/* Category Filter Tabs */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                            <button
+                                type="button"
+                                onClick={() => setCategoriaFiltro('todos')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                                    categoriaFiltro === 'todos'
+                                        ? 'bg-slate-900 text-white shadow-xs'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                Ver Todo
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategoriaFiltro('frescos')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                                    categoriaFiltro === 'frescos'
+                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                Verduras & Frutas
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategoriaFiltro('abarrotes')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                                    categoriaFiltro === 'abarrotes'
+                                        ? 'bg-amber-600 text-white shadow-xs'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                Abarrotes, Sopas & Chocolate
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategoriaFiltro('limpieza')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
+                                    categoriaFiltro === 'limpieza'
+                                        ? 'bg-blue-600 text-white shadow-xs'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                Limpieza & Jabones
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         {productosDisponibles.map((producto) => {
-                            const cantidadEnCarrito = cart[producto.id] || 0;
-                            const isSelected = cantidadEnCarrito > 0;
+                            const modo = modoProducto[producto.id] || 'peso';
+                            const cantKg = cartKg[producto.id] || 0;
+                            const montoP = cartPesos[producto.id] || 0;
+                            const isSelected = (modo === 'peso' && cantKg > 0) || (modo === 'pesos' && montoP > 0);
+                            const kgEquiv = producto.precioVenta > 0 ? montoP / producto.precioVenta : 0;
 
                             return (
                                 <motion.div
                                     key={producto.id}
                                     layout
-                                    className={`relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs flex flex-col justify-between ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'
-                                        }`}
+                                    className={`relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs flex flex-col justify-between ${
+                                        isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'
+                                    }`}
                                 >
                                     {/* Responsive Image Header */}
-                                    <div className="relative h-40 sm:h-44 bg-slate-100 overflow-hidden group">
+                                    <div className="relative h-36 sm:h-40 bg-slate-100 overflow-hidden group">
                                         <img
                                             src={producto.imagenUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80'}
                                             alt={producto.nombre}
@@ -285,42 +419,120 @@ export default function PedidoExpress() {
                                         </div>
                                     </div>
 
-                                    {/* Stepper */}
-                                    <div className="p-3 bg-white flex items-center justify-between border-t border-slate-100">
-                                        <div>
-                                            <p className="text-[11px] text-slate-500 font-medium">
-                                                Disponible: {producto.stockKg ?? 10} {producto.unidad}s
-                                            </p>
-                                            {isSelected && (
-                                                <p className="text-xs font-extrabold text-emerald-600">
-                                                    Subtotal: ${(producto.precioVenta * cantidadEnCarrito).toFixed(2)}
-                                                </p>
-                                            )}
+                                    {/* Selector de Modo: Por Peso vs Por Dinero ($) */}
+                                    <div className="p-3 bg-white space-y-2 border-t border-slate-100">
+                                        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleModo(producto.id, 'peso')}
+                                                className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                                                    modo === 'peso' ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                            >
+                                                <Scale className="w-3 h-3" /> Por Kilos (kg)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleModo(producto.id, 'pesos')}
+                                                className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                                                    modo === 'pesos' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                            >
+                                                <DollarSign className="w-3 h-3" /> Por Dinero ($)
+                                            </button>
                                         </div>
 
-                                        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
-                                            <button
-                                                type="button"
-                                                onClick={() => updateQuantity(producto.id, -1)}
-                                                disabled={!isSelected}
-                                                className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${isSelected
-                                                        ? 'bg-white text-slate-800 shadow-xs hover:bg-slate-200'
-                                                        : 'text-slate-300 cursor-not-allowed'
-                                                    }`}
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </button>
-                                            <span className="w-11 text-center text-xs font-black text-slate-800">
-                                                {cantidadEnCarrito > 0 ? `${cantidadEnCarrito} ${producto.unidad === 'unidad' ? '' : 'kg'}` : '0'}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => updateQuantity(producto.id, 1)}
-                                                className="w-9 h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-90 text-white flex items-center justify-center font-bold text-sm shadow-xs transition-all"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        {/* CONTROLES MODO PESO (KG) */}
+                                        {modo === 'peso' ? (
+                                            <div className="flex items-center justify-between pt-1">
+                                                <div>
+                                                    <p className="text-[11px] text-slate-500 font-medium">
+                                                        Disp: {producto.stockKg ?? 10} {producto.unidad}s
+                                                    </p>
+                                                    {cantKg > 0 && (
+                                                        <p className="text-xs font-extrabold text-emerald-600">
+                                                            Subtotal: ${(producto.precioVenta * cantKg).toFixed(2)}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateKg(producto.id, -1)}
+                                                        disabled={cantKg === 0}
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${
+                                                            cantKg > 0 ? 'bg-white text-slate-800 shadow-xs hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'
+                                                        }`}
+                                                    >
+                                                        <Minus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <span className="w-12 text-center text-xs font-black text-slate-800">
+                                                        {cantKg > 0 ? `${cantKg} ${producto.unidad === 'unidad' ? '' : 'kg'}` : '0'}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateKg(producto.id, 1)}
+                                                        className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-90 text-white flex items-center justify-center font-bold text-sm shadow-xs transition-all"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* CONTROLES MODO DINERO ($ PESOS) */
+                                            <div className="space-y-2 pt-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] font-bold text-emerald-800">
+                                                        {montoP > 0 ? `Pedir: $${montoP} MXN` : 'Elige monto en pesos:'}
+                                                    </span>
+                                                    {montoP > 0 && (
+                                                        <span className="text-[10px] font-black text-slate-600 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                                            ~{kgEquiv < 1 ? `${(kgEquiv * 1000).toFixed(0)} gr` : `${kgEquiv.toFixed(2)} kg`}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Preset Money Chips */}
+                                                <div className="grid grid-cols-4 gap-1">
+                                                    {[10, 20, 50, 100].map((monto) => (
+                                                        <button
+                                                            key={monto}
+                                                            type="button"
+                                                            onClick={() => addPesos(producto.id, monto)}
+                                                            className={`py-1 text-xs font-black rounded-lg border transition-all active:scale-95 ${
+                                                                montoP === monto
+                                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50'
+                                                            }`}
+                                                        >
+                                                            +${monto}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {/* Custom Input */}
+                                                <div className="flex items-center gap-1.5 pt-0.5">
+                                                    <span className="text-xs font-bold text-slate-500">$</span>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Otro monto (ej: 15)"
+                                                        value={montoP > 0 ? montoP : ''}
+                                                        onChange={e => setPesosDirecto(producto.id, e.target.value)}
+                                                        className="w-full px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    />
+                                                    {montoP > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addPesos(producto.id, -montoP)}
+                                                            className="text-[10px] font-bold text-rose-600 hover:underline shrink-0"
+                                                        >
+                                                            Quitar
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             );
@@ -569,7 +781,7 @@ export default function PedidoExpress() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] sm:text-xs text-slate-400">
-                                        Total a pagar al recoger:
+                                        Total a pagar al recoger ({totalArticulos} {totalArticulos === 1 ? 'verdura' : 'verduras'}):
                                     </p>
                                     <p className="text-base sm:text-lg font-black text-emerald-400 leading-tight">
                                         ${totalOrder.toFixed(2)} MXN

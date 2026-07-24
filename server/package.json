@@ -1,7 +1,7 @@
 {
   "name": "verduras-upload-server",
   "version": "1.0.0",
-  "description": "Servicio de carga y servicio de imagenes para el servidor Debian T410",
+  "description": "Servicio de almacenamiento, imagenes y Base de Datos SQLite para servidor Debian T410",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -9,6 +9,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "sqlite3": "^5.1.7"
   }
 }

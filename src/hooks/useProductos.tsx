@@ -3,14 +3,14 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 export interface Producto {
     id: string;
     nombre: string;
-    costoPromedio: number; // costo por kg
+    costoPromedio: number; // costo por kg o pieza
     precioVenta: number;   // precio de venta público
     unidad: 'kg' | 'unidad' | 'atado';
-    imagenUrl?: string;    // Foto del día del servidor o local
-    categoria?: string;
-    stockKg?: number;
+    imagenUrl?: string;    // Foto del día o catálogo
+    categoria?: 'Verduras' | 'Frutas' | 'Abarrotes' | 'Limpieza' | 'Chiles' | 'Tubérculos' | 'Semillas';
+    stockKg?: number;      // Stock en kg o piezas
     destacadoHoy?: boolean;
-    mermaAcumuladaKg?: number; // Kg echados a perder/merma
+    mermaAcumuladaKg?: number;
 }
 
 interface ProductosContextType {
@@ -24,11 +24,11 @@ interface ProductosContextType {
 
 const ProductosContext = createContext<ProductosContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'verduras-pro-productos-v2';
-const NEXT_ID_KEY = 'verduras-pro-next-id-v2';
+const STORAGE_KEY = 'verduras-pro-productos-v3';
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://192.168.1.149:3001';
 
-// Productos iniciales con fotos hermosas por defecto
 const productosIniciales: Producto[] = [
+    // --- VERDURAS & FRUTAS ---
     {
         id: '1',
         nombre: 'Tomate Bola Fresco',
@@ -55,30 +55,18 @@ const productosIniciales: Producto[] = [
     },
     {
         id: '3',
-        nombre: 'Lechuga Orejona Orgánica',
-        costoPromedio: 10.00,
-        precioVenta: 18.00,
-        unidad: 'unidad',
-        imagenUrl: 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?auto=format&fit=crop&w=600&q=80',
-        categoria: 'Verduras de Hoja',
-        stockKg: 25,
+        nombre: 'Aguacate Hass Maduro',
+        costoPromedio: 45.00,
+        precioVenta: 72.00,
+        unidad: 'kg',
+        imagenUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Frutas',
+        stockKg: 35,
         destacadoHoy: true,
-        mermaAcumuladaKg: 3
+        mermaAcumuladaKg: 2
     },
     {
         id: '4',
-        nombre: 'Zanahoria Dulce de Campo',
-        costoPromedio: 9.00,
-        precioVenta: 16.00,
-        unidad: 'kg',
-        imagenUrl: 'https://images.unsplash.com/photo-1598170845058-12ef4a457c3b?auto=format&fit=crop&w=600&q=80',
-        categoria: 'Verduras',
-        stockKg: 30,
-        destacadoHoy: false,
-        mermaAcumuladaKg: 0
-    },
-    {
-        id: '5',
         nombre: 'Cebolla Morada Premium',
         costoPromedio: 14.00,
         precioVenta: 25.00,
@@ -90,7 +78,7 @@ const productosIniciales: Producto[] = [
         mermaAcumuladaKg: 1
     },
     {
-        id: '6',
+        id: '5',
         nombre: 'Chile Serrano Verde',
         costoPromedio: 22.00,
         precioVenta: 38.00,
@@ -101,33 +89,85 @@ const productosIniciales: Producto[] = [
         destacadoHoy: false,
         mermaAcumuladaKg: 0.5
     },
+
+    // --- ABARROTES & DULCES ---
     {
-        id: '7',
-        nombre: 'Calabacita Italiana',
-        costoPromedio: 13.00,
-        precioVenta: 22.00,
-        unidad: 'kg',
-        imagenUrl: 'https://images.unsplash.com/photo-1597362925123-77861d3fbac7?auto=format&fit=crop&w=600&q=80',
-        categoria: 'Verduras',
-        stockKg: 20,
+        id: '101',
+        nombre: 'Sopa de Pasta La Moderna 200g',
+        costoPromedio: 7.50,
+        precioVenta: 11.50,
+        unidad: 'unidad',
+        imagenUrl: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281864?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Abarrotes',
+        stockKg: 50,
         destacadoHoy: true,
-        mermaAcumuladaKg: 1.5
+        mermaAcumuladaKg: 0
     },
     {
-        id: '8',
-        nombre: 'Aguacate Hass Maduro',
-        costoPromedio: 45.00,
-        precioVenta: 72.00,
+        id: '102',
+        nombre: 'Chocolate Abuelita Tablilla 540g',
+        costoPromedio: 62.00,
+        precioVenta: 85.00,
+        unidad: 'unidad',
+        imagenUrl: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Abarrotes',
+        stockKg: 20,
+        destacadoHoy: true,
+        mermaAcumuladaKg: 0
+    },
+    {
+        id: '103',
+        nombre: 'Aceite Vegetal de Cocina 1L',
+        costoPromedio: 28.00,
+        precioVenta: 39.00,
+        unidad: 'unidad',
+        imagenUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Abarrotes',
+        stockKg: 30,
+        destacadoHoy: false,
+        mermaAcumuladaKg: 0
+    },
+    {
+        id: '104',
+        nombre: 'Frijol Negro Seleccionado 1kg',
+        costoPromedio: 24.00,
+        precioVenta: 34.00,
         unidad: 'kg',
-        imagenUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=600&q=80',
-        categoria: 'Frutas y Verduras',
+        imagenUrl: 'https://images.unsplash.com/photo-1551462147-37885acc36f1?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Abarrotes',
+        stockKg: 40,
+        destacadoHoy: true,
+        mermaAcumuladaKg: 0
+    },
+
+    // --- LIMPIEZA & JABONES ---
+    {
+        id: '201',
+        nombre: 'Limpiador Fabuloso Lavanda 1L',
+        costoPromedio: 20.00,
+        precioVenta: 29.00,
+        unidad: 'unidad',
+        imagenUrl: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Limpieza',
+        stockKg: 25,
+        destacadoHoy: true,
+        mermaAcumuladaKg: 0
+    },
+    {
+        id: '202',
+        nombre: 'Jabón Zote Blanco 400g',
+        costoPromedio: 16.00,
+        precioVenta: 24.00,
+        unidad: 'unidad',
+        imagenUrl: 'https://images.unsplash.com/photo-1607006482602-53896561f52b?auto=format&fit=crop&w=600&q=80',
+        categoria: 'Limpieza',
         stockKg: 35,
         destacadoHoy: true,
-        mermaAcumuladaKg: 2
+        mermaAcumuladaKg: 0
     }
 ];
 
-function loadProductos(): Producto[] {
+function loadProductosLocal(): Producto[] {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -138,47 +178,79 @@ function loadProductos(): Producto[] {
     return productosIniciales;
 }
 
-function loadNextId(): number {
-    try {
-        const saved = localStorage.getItem(NEXT_ID_KEY);
-        if (saved) return parseInt(saved, 10);
-    } catch { /* ignore */ }
-    return 10;
-}
-
 export function ProductosProvider({ children }: { children: ReactNode }) {
-    const [productos, setProductos] = useState<Producto[]>(loadProductos);
-    const [nextId, setNextId] = useState(loadNextId);
+    const [productos, setProductos] = useState<Producto[]>(loadProductosLocal);
+
+    // Sync with SQLite backend on server 192.168.1.149:3001
+    const syncFromSQLiteServer = useCallback(async () => {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/productos`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    setProductos(data);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                }
+            }
+        } catch {
+            // Server offline fallback to local cache
+        }
+    }, []);
+
+    useEffect(() => {
+        syncFromSQLiteServer();
+    }, [syncFromSQLiteServer]);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
     }, [productos]);
 
-    useEffect(() => {
-        localStorage.setItem(NEXT_ID_KEY, String(nextId));
-    }, [nextId]);
+    const agregarProducto = useCallback(async (nuevo: Omit<Producto, 'id'>) => {
+        const prodId = `p-${Date.now()}`;
+        const completo: Producto = {
+            ...nuevo,
+            id: prodId,
+            categoria: nuevo.categoria || 'Abarrotes',
+            mermaAcumuladaKg: nuevo.mermaAcumuladaKg || 0,
+            destacadoHoy: nuevo.destacadoHoy ?? true
+        };
 
-    const agregarProducto = useCallback((nuevo: Omit<Producto, 'id'>) => {
-        setProductos(prev => [
-            ...prev,
-            {
-                ...nuevo,
-                id: String(nextId),
-                mermaAcumuladaKg: nuevo.mermaAcumuladaKg || 0,
-                destacadoHoy: nuevo.destacadoHoy ?? true
-            }
-        ]);
-        setNextId(prev => prev + 1);
-    }, [nextId]);
+        setProductos(prev => [...prev, completo]);
 
-    const editarProducto = useCallback((id: string, cambios: Partial<Producto>) => {
+        // Post to SQLite server
+        try {
+            await fetch(`${SERVER_URL}/api/productos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(completo)
+            });
+        } catch { /* ignore */ }
+    }, []);
+
+    const editarProducto = useCallback(async (id: string, cambios: Partial<Producto>) => {
         setProductos(prev =>
             prev.map(p => p.id === id ? { ...p, ...cambios } : p)
         );
+
+        // Put to SQLite server
+        try {
+            await fetch(`${SERVER_URL}/api/productos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cambios)
+            });
+        } catch { /* ignore */ }
     }, []);
 
-    const eliminarProducto = useCallback((id: string) => {
+    const eliminarProducto = useCallback(async (id: string) => {
         setProductos(prev => prev.filter(p => p.id !== id));
+
+        // Delete from SQLite server
+        try {
+            await fetch(`${SERVER_URL}/api/productos/${id}`, {
+                method: 'DELETE'
+            });
+        } catch { /* ignore */ }
     }, []);
 
     const registrarMerma = useCallback((id: string, kgMerma: number) => {
@@ -187,11 +259,19 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
                 if (p.id === id) {
                     const actualMerma = p.mermaAcumuladaKg || 0;
                     const nuevoStock = Math.max(0, (p.stockKg || 0) - kgMerma);
-                    return {
+                    const actualizado = {
                         ...p,
                         mermaAcumuladaKg: actualMerma + kgMerma,
                         stockKg: nuevoStock
                     };
+
+                    fetch(`${SERVER_URL}/api/productos/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mermaAcumuladaKg: actualizado.mermaAcumuladaKg, stockKg: actualizado.stockKg })
+                    }).catch(() => {});
+
+                    return actualizado;
                 }
                 return p;
             })
@@ -200,9 +280,7 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
 
     const borrarTodo = useCallback(() => {
         setProductos(productosIniciales);
-        setNextId(10);
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(NEXT_ID_KEY);
     }, []);
 
     return (
