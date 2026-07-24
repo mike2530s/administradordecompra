@@ -25,6 +25,7 @@ interface ProductosContextType {
 const ProductosContext = createContext<ProductosContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'verduras-pro-productos-v3';
+const WAS_CLEARED_KEY = 'verduras-pro-was-cleared-v3';
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://192.168.1.149:3001';
 
 const productosIniciales: Producto[] = [
@@ -184,10 +185,13 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
     // Sync with SQLite backend on server 192.168.1.149:3001
     const syncFromSQLiteServer = useCallback(async () => {
         try {
+            const wasCleared = localStorage.getItem(WAS_CLEARED_KEY);
+            if (wasCleared === 'true') return;
+
             const res = await fetch(`${SERVER_URL}/api/productos`);
             if (res.ok) {
                 const data = await res.json();
-                if (Array.isArray(data) && data.length > 0) {
+                if (Array.isArray(data)) {
                     setProductos(data);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 }
@@ -206,6 +210,7 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
     }, [productos]);
 
     const agregarProducto = useCallback(async (nuevo: Omit<Producto, 'id'>) => {
+        localStorage.removeItem(WAS_CLEARED_KEY);
         const prodId = `p-${Date.now()}`;
         const completo: Producto = {
             ...nuevo,
@@ -279,8 +284,9 @@ export function ProductosProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const borrarTodo = useCallback(() => {
-        setProductos(productosIniciales);
-        localStorage.removeItem(STORAGE_KEY);
+        setProductos([]);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+        localStorage.setItem(WAS_CLEARED_KEY, 'true');
 
         // Delete all tables from SQLite server
         fetch(`${SERVER_URL}/api/reset`, {

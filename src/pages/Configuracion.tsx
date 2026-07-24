@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Settings, User, Bell, LogOut, Save, Trash2, AlertTriangle, Eye, EyeOff, Moon, Sun, Camera } from 'lucide-react';
+import { Settings, User, Bell, LogOut, Save, Trash2, AlertTriangle, Eye, EyeOff, Moon, Sun, Camera, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProductos } from '@/hooks/useProductos';
 import { useTheme } from '@/hooks/useTheme';
@@ -207,19 +207,19 @@ export default function Configuracion() {
                                 }}
                                 className="rounded-xl text-xs font-bold border-emerald-300 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 h-9"
                             >
-                                🔔 Push Pedido PWA
+                                Push Pedido PWA
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => {
-                                    const msg = encodeURIComponent("🛒 *NUEVO PEDIDO EXPRESS - VERDULERÍA LA PRIMAVERA*\n\n👤 *Cliente:* Doña María Pérez\n📱 *Teléfono:* 5512345678\n📦 *Pedido:* $185.00 MXN ($50 Papa, $35 Limón, $100 Aguacate)\n⏰ *Hora Recojo:* 02:30 PM\n💳 *Pago:* Efectivo");
-                                    window.open(`https://wa.me/5215512345678?text=${msg}`, '_blank');
+                                    const msg = encodeURIComponent("*NUEVO PEDIDO EXPRESS - VERDULERÍA LA PRIMAVERA*\n\n*Cliente:* Doña María Pérez\n*Teléfono:* 4151024887\n*Pedido:* $185.00 MXN ($50 Papa, $35 Limón, $100 Aguacate)\n*Hora Recojo:* 02:30 PM\n*Pago:* Efectivo");
+                                    window.open(`https://wa.me/524151024887?text=${msg}`, '_blank');
                                 }}
                                 className="rounded-xl text-xs font-bold border-emerald-500 text-emerald-900 bg-emerald-100 hover:bg-emerald-200 h-9"
                             >
-                                📲 Notificación WhatsApp
+                                Notificación WhatsApp
                             </Button>
 
                             <Button
@@ -227,28 +227,28 @@ export default function Configuracion() {
                                 variant="outline"
                                 onClick={() => {
                                     if ('Notification' in window && Notification.permission === 'granted') {
-                                        new Notification('⚠️ Alerta Stock Bajo - La Primavera', {
+                                        new Notification('Alerta Stock Bajo - La Primavera', {
                                             body: '¡Quedan solo 3.5 kg de Tomate Bola en existencia!',
                                             icon: '/logo.png'
                                         });
                                     } else {
-                                        alert('⚠️ ALERTA STOCK BAJO: ¡Le quedan solo 3.5 kg de Tomate Bola en tienda!');
+                                        alert('ALERTA STOCK BAJO: ¡Le quedan solo 3.5 kg de Tomate Bola en tienda!');
                                     }
                                 }}
                                 className="rounded-xl text-xs font-bold border-amber-300 text-amber-800 dark:text-amber-300 hover:bg-amber-50 h-9"
                             >
-                                ⚠️ Push Stock Bajo
+                                Push Stock Bajo
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => {
-                                    alert('📊 RESUMEN DIARIO LA PRIMAVERA:\nHoy registraste $1,885.00 en compras escaneadas y $635.00 en ganancias proyectadas.');
+                                    alert('RESUMEN DIARIO LA PRIMAVERA:\nHoy registraste $1,885.00 en compras escaneadas y $635.00 en ganancias proyectadas.');
                                 }}
                                 className="rounded-xl text-xs font-bold border-blue-300 text-blue-800 dark:text-blue-300 hover:bg-blue-50 h-9"
                             >
-                                📊 Resumen Diario
+                                Resumen Diario
                             </Button>
                         </div>
                     </div>
@@ -261,6 +261,24 @@ export default function Configuracion() {
                     <h3 className="text-base font-semibold text-red-700 dark:text-red-400 mb-2">⚠️ Zona de Peligro</h3>
                     <Separator className="mb-4" />
                     <div className="space-y-4">
+                        {/* Restore Demo Data */}
+                        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div>
+                                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Restablecer Datos de Simulación</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Recarga el catálogo completo, compras y ventas reales para demostración</p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                className="rounded-xl text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 font-bold gap-2 text-xs"
+                                onClick={() => {
+                                    localStorage.clear();
+                                    window.location.reload();
+                                }}
+                            >
+                                <Sparkles size={15} className="text-emerald-600" /> Cargar Datos Demo
+                            </Button>
+                        </div>
+
                         {/* Delete all data */}
                         <div className="flex items-center justify-between">
                             <div>
@@ -269,7 +287,7 @@ export default function Configuracion() {
                             </div>
                             <Button
                                 variant="outline"
-                                className="rounded-xl text-red-600 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 gap-2"
+                                className="rounded-xl text-red-600 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 gap-2 text-xs"
                                 onClick={() => { setShowDeleteDialog(true); setDeletePassword(''); setDeleteError(''); }}
                             >
                                 <Trash2 size={16} /> Borrar todo

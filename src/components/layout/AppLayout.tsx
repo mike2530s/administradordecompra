@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import OfflineBanner from '@/components/OfflineBanner';
 
 interface AppLayoutProps {
     onNewCompra: () => void;
@@ -22,6 +23,8 @@ export default function AppLayout({ onNewCompra, onNewVenta }: AppLayoutProps) {
                 onNewCompra={onNewCompra}
                 onNewVenta={onNewVenta}
             />
+
+            <OfflineBanner />
 
             <main className="pt-16 min-h-screen lg:pl-[260px] transition-all duration-300">
                 <div className="p-3 sm:p-6 max-w-7xl mx-auto">

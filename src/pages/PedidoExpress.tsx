@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useProductos, type Producto } from '@/hooks/useProductos';
+import OfflineBanner from '@/components/OfflineBanner';
 import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown, DollarSign, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -281,6 +282,8 @@ export default function PedidoExpress() {
                     </a>
                 </div>
             </header>
+
+            <OfflineBanner />
 
             <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
                 {/* PWA Install Banner */}

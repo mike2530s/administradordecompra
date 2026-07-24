@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, DollarSign, Bell, LogOut, User, Menu, AlertTriangle, Send, Sparkles, Settings, Trash2, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -10,17 +10,20 @@ interface HeaderProps {
     onNewVenta: () => void;
 }
 
-export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: HeaderProps) {
-    const { user, signOut } = useAuth();
-    const navigate = useNavigate();
-    const [showUserMenu, setShowUserMenu] = useState(false);
-    const [showNotifMenu, setShowNotifMenu] = useState(false);
+const NOTIF_STORAGE_KEY = 'verduras_pro_notificaciones_v2';
 
-    // Live notifications list
-    const [notificaciones, setNotificaciones] = useState([
+function getInitialNotificaciones() {
+    try {
+        const saved = localStorage.getItem(NOTIF_STORAGE_KEY);
+        if (saved !== null) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch { /* ignore */ }
+    return [
         {
             id: '1',
-            titulo: '🛒 Nuevo Pedido Express',
+            titulo: 'Nuevo Pedido Express',
             desc: 'Doña María Pérez pidió $185.00 MXN (Recojo a las 02:30 PM)',
             tiempo: 'Hace 5 min',
             leido: false,
@@ -28,30 +31,37 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
         },
         {
             id: '2',
-            titulo: '⚠️ Stock Bajo en Tienda',
+            titulo: 'Stock Bajo en Tienda',
             desc: 'Le quedan solo 3.5 kg de Tomate Bola en existencia',
             tiempo: 'Hace 20 min',
             leido: false,
             tipo: 'stock'
-        },
-        {
-            id: '3',
-            titulo: '📸 Nota de Remisión Procesada',
-            desc: 'Se registraron $1,885.00 en compras escaneadas con Gemini IA',
-            tiempo: 'Hace 1 hora',
-            leido: true,
-            tipo: 'compra'
         }
-    ]);
+    ];
+}
 
-    const sinLeerCount = notificaciones.filter(n => !n.leido).length;
+export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: HeaderProps) {
+    const { user, signOut } = useAuth();
+    const navigate = useNavigate();
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showNotifMenu, setShowNotifMenu] = useState(false);
+
+    // Persisted notifications state
+    const [notificaciones, setNotificaciones] = useState(getInitialNotificaciones);
+
+    useEffect(() => {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificaciones));
+    }, [notificaciones]);
+
+    const sinLeerCount = notificaciones.filter((n: any) => !n.leido).length;
 
     const marcarTodasLeidas = () => {
-        setNotificaciones(prev => prev.map(n => ({ ...n, leido: true })));
+        setNotificaciones((prev: any[]) => prev.map(n => ({ ...n, leido: true })));
     };
 
     const limpiarNotificaciones = () => {
         setNotificaciones([]);
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify([]));
     };
 
     return (
@@ -90,7 +100,7 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
                     <span className="hidden sm:inline">Venta</span>
                 </Button>
 
-                {/* Notifications Bell Button & Popover */}
+                {/* Notifications Bell Button & Centered Popover on Mobile */}
                 <div className="relative">
                     <button
                         onClick={() => {
@@ -107,8 +117,8 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
 
                     {showNotifMenu && (
                         <>
-                            <div className="fixed inset-0 z-40" onClick={() => setShowNotifMenu(false)} />
-                            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 overflow-hidden">
+                            <div className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent" onClick={() => setShowNotifMenu(false)} />
+                            <div className="fixed inset-x-3 top-16 mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 w-auto sm:w-96 max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 py-2 z-50 overflow-hidden transition-all">
                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
                                         <Bell size={16} className="text-emerald-600" />
@@ -125,7 +135,7 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
                                                 onClick={marcarTodasLeidas}
                                                 className="text-[11px] font-bold text-emerald-600 hover:underline"
                                             >
-                                                Marcar leídas
+                                                Leídas
                                             </button>
                                         )}
                                         {notificaciones.length > 0 && (
@@ -147,7 +157,7 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
                                             <p className="text-[10px] text-slate-400 font-normal">Todo al día en La Primavera</p>
                                         </div>
                                     ) : (
-                                        notificaciones.map((n) => (
+                                        notificaciones.map((n: any) => (
                                             <div
                                                 key={n.id}
                                                 className={`p-3.5 hover:bg-slate-50 dark:hover:bg-gray-800/60 transition-colors flex items-start gap-3 ${!n.leido ? 'bg-emerald-50/30 dark:bg-emerald-950/20' : ''}`}

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShoppingCart, Camera, Sparkles, Plus, TrendingUp, DollarSign, FileText } from 'lucide-react';
+import { ShoppingCart, Camera, Sparkles, Plus, TrendingUp, DollarSign, FileText, Trash2 } from 'lucide-react';
 import { formatearMoneda } from '@/lib/calculations';
 import NotaScannerModal, { type NotaItemExtrahido } from '@/components/NotaScannerModal';
 import { useProductos } from '@/hooks/useProductos';
@@ -80,6 +80,17 @@ export default function Compras() {
         };
         fetchCompras();
     }, [SERVER_URL]);
+
+    const eliminarCompra = (id: string) => {
+        setCompras(prev => prev.filter(c => c.id !== id));
+    };
+
+    const borrarTodasLasCompras = () => {
+        if (window.confirm('¿Seguro que deseas borrar todo el historial de compras?')) {
+            setCompras([]);
+            fetch(`${SERVER_URL}/api/reset`, { method: 'DELETE' }).catch(() => {});
+        }
+    };
 
     // KPI total calculation
     const totalInversion = useMemo(() => {
@@ -324,11 +335,22 @@ export default function Compras() {
             {/* Purchases Table with IMPORTE & Projected Profit Columns */}
             <Card className="border border-slate-200 dark:border-gray-800 shadow-xs">
                 <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <FileText className="w-4 h-4 text-emerald-600" />
                             <span>Historial Completo de Compras & Proyección de Ganancias</span>
                         </h3>
+
+                        {compras.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={borrarTodasLasCompras}
+                                className="rounded-xl text-xs font-bold text-rose-600 border-rose-200 hover:bg-rose-50 h-8 gap-1.5 self-start sm:self-auto"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> Borrar Historial Compras
+                            </Button>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -343,6 +365,7 @@ export default function Compras() {
                                     <th className="text-right py-3 px-2 text-slate-900 font-extrabold">Importe Compra ($)</th>
                                     <th className="text-right py-3 px-2 text-amber-700 font-black">Ganancia Est. ($)</th>
                                     <th className="text-left py-3 px-2 hidden md:table-cell">Origen</th>
+                                    <th className="text-center py-3 px-2">Borrar</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -359,6 +382,16 @@ export default function Compras() {
                                             <td className="py-3 px-2 text-right font-black text-slate-900 dark:text-gray-100 bg-slate-50/50 dark:bg-gray-800/50">{formatearMoneda(c.totalImporte)}</td>
                                             <td className="py-3 px-2 text-right font-black text-amber-700 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-950/20">+{formatearMoneda(gananciaRow)}</td>
                                             <td className="py-3 px-2 text-gray-500 hidden md:table-cell text-[11px] font-medium">{c.proveedor}</td>
+                                            <td className="py-3 px-2 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => eliminarCompra(c.id)}
+                                                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                                                    title="Borrar compra"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })}
