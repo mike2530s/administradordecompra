@@ -7,7 +7,6 @@ import {
     BarChart3,
     History,
     Settings,
-    Leaf,
     Package,
     X,
     Moon,
@@ -60,12 +59,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             >
                 {/* Logo + Close */}
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)' }}>
-                            <Leaf className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="font-extrabold text-lg text-gray-800 dark:text-gray-100 tracking-tight">VerdurasPro</span>
+                    <div className="flex items-center gap-2.5">
+                        <img
+                            src="/logo.png"
+                            alt="Verdulería La Primavera"
+                            className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-xs shrink-0 border border-slate-200"
+                        />
+                        <span className="font-extrabold text-base text-gray-800 dark:text-gray-100 tracking-tight">La Primavera</span>
                     </div>
                     <button
                         onClick={onClose}

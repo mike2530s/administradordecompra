@@ -18,14 +18,15 @@ export default function Header({ onMenuToggle, onNewCompra, onNewVenta }: Header
     return (
         <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 z-30 flex items-center justify-between px-4 sm:px-6">
             {/* Left: Menu + Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
                 <button
                     onClick={onMenuToggle}
                     className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                     <Menu size={22} className="text-gray-600 dark:text-gray-300" />
                 </button>
-                <span className="text-lg font-bold text-gray-800 dark:text-gray-100 hidden sm:block">VerdurasPro</span>
+                <img src="/logo.png" alt="La Primavera" className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 border border-slate-200" />
+                <span className="text-base font-extrabold text-gray-800 dark:text-gray-100 hidden sm:block">La Primavera</span>
             </div>
 
             {/* Right: Actions */}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useProductos, type Producto } from '@/hooks/useProductos';
-import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Leaf, Banknote, CreditCard, Zap, Share2 } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CartItem {
@@ -11,7 +11,7 @@ interface CartItem {
 export default function PedidoExpress() {
     const { productos } = useProductos();
     const [cart, setCart] = useState<Record<string, number>>({});
-    
+
     // PWA Install Prompt state
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
@@ -20,10 +20,34 @@ export default function PedidoExpress() {
     // Form fields for Pickup in Store
     const [nombre, setNombre] = useState('');
     const [telefono, setTelefono] = useState('');
-    const [horaRecojo, setHoraRecojo] = useState('Lo antes posible (15-30 min)');
+    const [horaRecojoOption, setHoraRecojoOption] = useState('Lo antes posible (15-30 min)');
+
+    // Stylized Custom Time Picker State
+    const [pickerHora, setPickerHora] = useState(2); // 1-12
+    const [pickerMinuto, setPickerMinuto] = useState(30); // 0, 15, 30, 45
+    const [pickerPeriodo, setPickerPeriodo] = useState<'AM' | 'PM'>('PM');
+
     const [notas, setNotas] = useState('');
     const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
     const [pedidoEnviado, setPedidoEnviado] = useState(false);
+
+    // Format stylized time string
+    const horaCustomFormatted = useMemo(() => {
+        const h = pickerHora < 10 ? `0${pickerHora}` : `${pickerHora}`;
+        const m = pickerMinuto < 10 ? `0${pickerMinuto}` : `${pickerMinuto}`;
+        return `${h}:${m} ${pickerPeriodo}`;
+    }, [pickerHora, pickerMinuto, pickerPeriodo]);
+
+    // Quick preset time slots
+    const timePresets = ['10:00 AM', '11:30 AM', '01:00 PM', '02:30 PM', '04:00 PM', '05:30 PM', '07:00 PM'];
+
+    const applyPresetSlot = (slotStr: string) => {
+        const parts = slotStr.split(' ');
+        const timeParts = parts[0].split(':');
+        setPickerHora(parseInt(timeParts[0], 10));
+        setPickerMinuto(parseInt(timeParts[1], 10));
+        setPickerPeriodo(parts[1] as 'AM' | 'PM');
+    };
 
     // Detect PWA Install prompt on Android/Chrome & iOS
     useEffect(() => {
@@ -112,16 +136,18 @@ export default function PedidoExpress() {
             return;
         }
 
-        let message = `🛒 *NUEVO PEDIDO PARA RECOGER EN TIENDA*\n`;
+        const displayHora = horaRecojoOption === 'personalizada' ? `A las ${horaCustomFormatted}` : horaRecojoOption;
+
+        let message = `*PEDIDO VERDULERÍA LA PRIMAVERA*\n`;
         message += `-----------------------------------\n`;
-        message += `👤 *Cliente:* ${nombre}\n`;
-        message += `📞 *Teléfono:* ${telefono}\n`;
-        message += `🏪 *Modalidad:* Recoger en Tienda / Local\n`;
-        message += `⏰ *Hora estimada de recojo:* ${horaRecojo}\n`;
-        message += `💵 *Pago:* ${metodoPago === 'efectivo' ? 'Efectivo al recoger' : 'Transferencia Bancaria'}\n`;
-        if (notas) message += `📝 *Notas:* ${notas}\n`;
+        message += `*Cliente:* ${nombre}\n`;
+        message += `*Teléfono:* ${telefono}\n`;
+        message += `*Modalidad:* Recoger en Tienda / Local\n`;
+        message += `*Hora estimada de recojo:* ${displayHora}\n`;
+        message += `*Pago:* ${metodoPago === 'efectivo' ? 'Efectivo al recoger' : 'Transferencia Bancaria'}\n`;
+        if (notas) message += `*Notas:* ${notas}\n`;
         message += `-----------------------------------\n`;
-        message += `🥦 *VERDURAS A PREPARAR:*\n\n`;
+        message += `*VERDURAS A PREPARAR:*\n\n`;
 
         cartItems.forEach((item, index) => {
             const subtotal = item.producto.precioVenta * item.cantidad;
@@ -130,10 +156,10 @@ export default function PedidoExpress() {
         });
 
         message += `-----------------------------------\n`;
-        message += `💰 *TOTAL A PAGAR AL RECOGER:* *$${totalOrder.toFixed(2)} MXN*\n\n`;
+        message += `*TOTAL A PAGAR AL RECOGER:* *$${totalOrder.toFixed(2)} MXN*\n\n`;
         message += `¡Gracias! Paso a la tienda por mi pedido preparado.`;
 
-        const shopPhone = '5215555555555';
+        const shopPhone = '524151024887';
         const encodedMsg = encodeURIComponent(message);
         const waUrl = `https://wa.me/${shopPhone}?text=${encodedMsg}`;
 
@@ -143,22 +169,24 @@ export default function PedidoExpress() {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-800 pb-36 font-sans antialiased">
-            {/* Header Banner - Professional Lucide Icons */}
-            <header className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white shadow-lg sticky top-0 z-30">
-                <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
-                    <div className="flex items-center space-x-2.5">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner shrink-0">
-                            <Leaf className="w-5 h-5" />
-                        </div>
+            {/* Header Banner - Official La Primavera Logo */}
+            <header className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white shadow-lg sticky top-0 z-30 border-b border-emerald-600/30">
+                <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <img
+                            src="/logo.png"
+                            alt="Verdulería La Primavera"
+                            className="w-11 h-11 rounded-xl object-contain bg-white/95 p-1 shadow-md shrink-0 border border-emerald-200"
+                        />
                         <div>
                             <h1 className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-1.5 flex-wrap">
-                                Pide & Recoge en Tienda
-                                <span className="bg-amber-400 text-emerald-950 text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-wider">
-                                    App Web
+                                Verdulería La Primavera
+                                <span className="bg-amber-400 text-emerald-950 text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-wider shadow-xs">
+                                    Frescos
                                 </span>
                             </h1>
                             <p className="text-[11px] sm:text-xs text-emerald-100 flex items-center gap-1">
-                                <Store className="w-3 h-3 shrink-0" /> Selecciona tu verdura, empaquetamos y pasas a recoger.
+                                <Store className="w-3 h-3 shrink-0" /> Pide desde tu celular y pasa a recoger sin filas.
                             </p>
                         </div>
                     </div>
@@ -230,9 +258,8 @@ export default function PedidoExpress() {
                                 <motion.div
                                     key={producto.id}
                                     layout
-                                    className={`relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs flex flex-col justify-between ${
-                                        isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'
-                                    }`}
+                                    className={`relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs flex flex-col justify-between ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'
+                                        }`}
                                 >
                                     {/* Responsive Image Header */}
                                     <div className="relative h-40 sm:h-44 bg-slate-100 overflow-hidden group">
@@ -276,11 +303,10 @@ export default function PedidoExpress() {
                                                 type="button"
                                                 onClick={() => updateQuantity(producto.id, -1)}
                                                 disabled={!isSelected}
-                                                className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${
-                                                    isSelected
+                                                className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${isSelected
                                                         ? 'bg-white text-slate-800 shadow-xs hover:bg-slate-200'
                                                         : 'text-slate-300 cursor-not-allowed'
-                                                }`}
+                                                    }`}
                                             >
                                                 <Minus className="w-4 h-4" />
                                             </button>
@@ -302,14 +328,14 @@ export default function PedidoExpress() {
                     </div>
                 </section>
 
-                {/* Section 2: Pickup Form */}
+                {/* Section 2: Pickup Form & Stylized Time Picker */}
                 <section className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
                     <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                         <span>2. Datos para Tener Listo tu Pedido en Tienda</span>
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     </h2>
 
-                    <form onSubmit={handleSendWhatsAppOrder} className="space-y-3.5">
+                    <form onSubmit={handleSendWhatsAppOrder} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
@@ -344,17 +370,140 @@ export default function PedidoExpress() {
                                     <Clock className="w-3.5 h-3.5 text-emerald-600" /> ¿A qué hora pasas a recoger?
                                 </label>
                                 <select
-                                    value={horaRecojo}
-                                    onChange={e => setHoraRecojo(e.target.value)}
+                                    value={horaRecojoOption}
+                                    onChange={e => setHoraRecojoOption(e.target.value)}
                                     className="w-full px-3.5 py-3 text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all outline-none font-semibold text-slate-800"
                                 >
                                     <option value="Lo antes posible (15-30 min)">Lo antes posible (15-30 min)</option>
                                     <option value="En 1 hora">En 1 hora</option>
                                     <option value="Por la tarde (después de 4pm)">Por la tarde (después de 4pm)</option>
                                     <option value="Mañana por la mañana">Mañana por la mañana</option>
+                                    <option value="personalizada">Elegir hora exacta (Selector Estilizado)</option>
                                 </select>
                             </div>
                         </div>
+
+                        {/* STYLIZED TIME PICKER CARD */}
+                        <AnimatePresence>
+                            {horaRecojoOption === 'personalizada' && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="bg-gradient-to-br from-emerald-50 via-teal-50/60 to-slate-50 border-2 border-emerald-500/40 p-4 rounded-2xl shadow-sm space-y-4"
+                                >
+                                    <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                                                <Clock className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider">
+                                                Selector de Hora Estilizado
+                                            </span>
+                                        </div>
+
+                                        <span className="text-xs font-black text-emerald-700 bg-white px-3 py-1 rounded-full border border-emerald-300 shadow-xs">
+                                            Recojo a las: {horaCustomFormatted}
+                                        </span>
+                                    </div>
+
+                                    {/* Presets chips */}
+                                    <div className="space-y-1">
+                                        <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                            Horarios Frecuentes:
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {timePresets.map((preset) => (
+                                                <button
+                                                    key={preset}
+                                                    type="button"
+                                                    onClick={() => applyPresetSlot(preset)}
+                                                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all active:scale-95 ${horaCustomFormatted === preset
+                                                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50'
+                                                        }`}
+                                                >
+                                                    {preset}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Interactive Steppers */}
+                                    <div className="flex items-center justify-center gap-3 pt-1">
+                                        {/* Hora Stepper */}
+                                        <div className="flex flex-col items-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerHora(h => h === 12 ? 1 : h + 1)}
+                                                className="w-10 h-7 rounded-t-lg bg-white border border-slate-200 hover:bg-emerald-100 flex items-center justify-center text-slate-700 transition-all active:scale-95"
+                                            >
+                                                <ChevronUp className="w-4 h-4" />
+                                            </button>
+                                            <div className="w-16 h-12 bg-white border-x border-slate-200 flex items-center justify-center font-black text-xl text-slate-900 shadow-inner">
+                                                {pickerHora < 10 ? `0${pickerHora}` : pickerHora}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerHora(h => h === 1 ? 12 : h - 1)}
+                                                className="w-10 h-7 rounded-b-lg bg-white border border-slate-200 hover:bg-emerald-100 flex items-center justify-center text-slate-700 transition-all active:scale-95"
+                                            >
+                                                <ChevronDown className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[10px] text-slate-500 font-bold mt-1">HORA</span>
+                                        </div>
+
+                                        <span className="text-2xl font-black text-emerald-600 pb-4">:</span>
+
+                                        {/* Minutos Stepper */}
+                                        <div className="flex flex-col items-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerMinuto(m => (m + 15) % 60)}
+                                                className="w-10 h-7 rounded-t-lg bg-white border border-slate-200 hover:bg-emerald-100 flex items-center justify-center text-slate-700 transition-all active:scale-95"
+                                            >
+                                                <ChevronUp className="w-4 h-4" />
+                                            </button>
+                                            <div className="w-16 h-12 bg-white border-x border-slate-200 flex items-center justify-center font-black text-xl text-slate-900 shadow-inner">
+                                                {pickerMinuto < 10 ? `0${pickerMinuto}` : pickerMinuto}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerMinuto(m => (m - 15 + 60) % 60)}
+                                                className="w-10 h-7 rounded-b-lg bg-white border border-slate-200 hover:bg-emerald-100 flex items-center justify-center text-slate-700 transition-all active:scale-95"
+                                            >
+                                                <ChevronDown className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[10px] text-slate-500 font-bold mt-1">MINUTOS</span>
+                                        </div>
+
+                                        {/* AM / PM Toggle */}
+                                        <div className="flex flex-col justify-center gap-1 pl-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerPeriodo('AM')}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${pickerPeriodo === 'AM'
+                                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                                        : 'bg-white text-slate-600 border border-slate-200'
+                                                    }`}
+                                            >
+                                                AM
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerPeriodo('PM')}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${pickerPeriodo === 'PM'
+                                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                                        : 'bg-white text-slate-600 border border-slate-200'
+                                                    }`}
+                                            >
+                                                PM
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                             <div>
@@ -365,11 +514,10 @@ export default function PedidoExpress() {
                                     <button
                                         type="button"
                                         onClick={() => setMetodoPago('efectivo')}
-                                        className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 ${
-                                            metodoPago === 'efectivo'
+                                        className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 ${metodoPago === 'efectivo'
                                                 ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold shadow-xs'
                                                 : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                        }`}
+                                            }`}
                                     >
                                         <Banknote className="w-4 h-4 text-emerald-600" />
                                         <span>Efectivo al recoger</span>
@@ -377,11 +525,10 @@ export default function PedidoExpress() {
                                     <button
                                         type="button"
                                         onClick={() => setMetodoPago('transferencia')}
-                                        className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 ${
-                                            metodoPago === 'transferencia'
+                                        className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 ${metodoPago === 'transferencia'
                                                 ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold shadow-xs'
                                                 : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                        }`}
+                                            }`}
                                     >
                                         <CreditCard className="w-4 h-4 text-emerald-600" />
                                         <span>Transferencia previa</span>
