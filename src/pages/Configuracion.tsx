@@ -187,26 +187,39 @@ export default function Configuracion() {
                             <span>Probar y Simular Notificaciones en Celular / Pantalla:</span>
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => {
-                                    if ('Notification' in window && Notification.permission !== 'granted') {
-                                        Notification.requestPermission();
-                                    }
-                                    if ('Notification' in window && Notification.permission === 'granted') {
-                                        new Notification('🛒 Nuevo Pedido en Tienda', {
-                                            body: 'Doña María Pérez pidió $185 MXN (Recojo en 30 min)',
-                                            icon: '/logo.png'
+                                    if ('Notification' in window) {
+                                        Notification.requestPermission().then(permission => {
+                                            if (permission === 'granted') {
+                                                new Notification('🛒 Nuevo Pedido en Tienda - La Primavera', {
+                                                    body: 'Doña María Pérez pidió $185 MXN (Recojo a las 02:30 PM)',
+                                                    icon: '/logo.png'
+                                                });
+                                            } else {
+                                                alert('🛒 NOTIFICACIÓN PWA: ¡Doña María Pérez envió un nuevo pedido de $185 MXN para recoger en 30 min!');
+                                            }
                                         });
-                                    } else {
-                                        alert('🛒 NOTIFICACIÓN: ¡Doña María Pérez envió un nuevo pedido de $185 MXN para recoger en 30 min!');
                                     }
                                 }}
                                 className="rounded-xl text-xs font-bold border-emerald-300 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 h-9"
                             >
-                                Simular Pedido Express
+                                🔔 Push Pedido PWA
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    const msg = encodeURIComponent("🛒 *NUEVO PEDIDO EXPRESS - VERDULERÍA LA PRIMAVERA*\n\n👤 *Cliente:* Doña María Pérez\n📱 *Teléfono:* 5512345678\n📦 *Pedido:* $185.00 MXN ($50 Papa, $35 Limón, $100 Aguacate)\n⏰ *Hora Recojo:* 02:30 PM\n💳 *Pago:* Efectivo");
+                                    window.open(`https://wa.me/5215512345678?text=${msg}`, '_blank');
+                                }}
+                                className="rounded-xl text-xs font-bold border-emerald-500 text-emerald-900 bg-emerald-100 hover:bg-emerald-200 h-9"
+                            >
+                                📲 Notificación WhatsApp
                             </Button>
 
                             <Button
@@ -214,7 +227,7 @@ export default function Configuracion() {
                                 variant="outline"
                                 onClick={() => {
                                     if ('Notification' in window && Notification.permission === 'granted') {
-                                        new Notification('⚠️ Alerta Stock Bajo', {
+                                        new Notification('⚠️ Alerta Stock Bajo - La Primavera', {
                                             body: '¡Quedan solo 3.5 kg de Tomate Bola en existencia!',
                                             icon: '/logo.png'
                                         });
@@ -224,18 +237,18 @@ export default function Configuracion() {
                                 }}
                                 className="rounded-xl text-xs font-bold border-amber-300 text-amber-800 dark:text-amber-300 hover:bg-amber-50 h-9"
                             >
-                                Simular Stock Bajo
+                                ⚠️ Push Stock Bajo
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => {
-                                    alert('📊 RESUMEN DIARIO: Hoy registraste $1,885.00 en compras escaneadas y $635.00 en ganancias proyectadas.');
+                                    alert('📊 RESUMEN DIARIO LA PRIMAVERA:\nHoy registraste $1,885.00 en compras escaneadas y $635.00 en ganancias proyectadas.');
                                 }}
                                 className="rounded-xl text-xs font-bold border-blue-300 text-blue-800 dark:text-blue-300 hover:bg-blue-50 h-9"
                             >
-                                Simular Resumen Diario
+                                📊 Resumen Diario
                             </Button>
                         </div>
                     </div>

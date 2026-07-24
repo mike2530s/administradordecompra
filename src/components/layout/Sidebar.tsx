@@ -12,19 +12,21 @@ import {
     Moon,
     Sun,
     Send,
+    LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/pedido', icon: Send, label: 'Formulario Pedido Cliente' },
     { path: '/compras', icon: ShoppingCart, label: 'Compras' },
     { path: '/ventas', icon: DollarSign, label: 'Ventas' },
     { path: '/productos', icon: Package, label: 'Catálogo & Fotos' },
     { path: '/analisis', icon: BarChart3, label: 'Análisis & Pérdidas' },
     { path: '/historial', icon: History, label: 'Historial' },
     { path: '/configuracion', icon: Settings, label: 'Configuración' },
+    { path: '/pedido', icon: Send, label: 'Formulario Pedido Cliente' },
 ];
 
 interface SidebarProps {
@@ -35,6 +37,7 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
     const location = useLocation();
     const { theme, toggleTheme } = useTheme();
+    const { signOut } = useAuth();
 
     return (
         <>
@@ -98,8 +101,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     })}
                 </nav>
 
-                {/* Theme toggle + Footer */}
-                <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-2 shrink-0">
+                {/* Theme toggle + Sign Out + Footer */}
+                <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-1.5 shrink-0">
                     <button
                         onClick={toggleTheme}
                         className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors text-xs font-semibold"
@@ -109,7 +112,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
                         </span>
                     </button>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-600 text-center font-medium">VerdurasPro v1.0 • Móvil & Web</p>
+
+                    <button
+                        onClick={async () => await signOut()}
+                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors text-xs font-bold"
+                    >
+                        <LogOut size={18} />
+                        <span>Cerrar sesión</span>
+                    </button>
+
+                    <p className="text-[11px] text-gray-400 dark:text-gray-600 text-center font-medium pt-1">VerdurasPro v1.0 • Móvil & Web</p>
                 </div>
             </aside>
         </>
