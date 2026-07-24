@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  upload-server:
+    build: ./server
+    container_name: verduras_upload_server
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/uploads:/app/uploads
+    environment:
+      - PORT=3001

@@ -14,6 +14,7 @@ import Productos from '@/pages/Productos';
 import Analisis from '@/pages/Analisis';
 import Historial from '@/pages/Historial';
 import Configuracion from '@/pages/Configuracion';
+import PedidoExpress from '@/pages/PedidoExpress';
 import AppLayout from '@/components/layout/AppLayout';
 import CompraForm from '@/components/forms/CompraForm';
 import VentaForm from '@/components/forms/VentaForm';
@@ -44,7 +45,7 @@ function ProtectedRoutes() {
   }
 
   if (!user) {
-    return <Navigate to="/welcome" replace />;
+    return <Navigate to="/pedido" replace />;
   }
 
   return (
@@ -65,6 +66,7 @@ function ProtectedRoutes() {
           <Route path="/analisis" element={<Analisis />} />
           <Route path="/historial" element={<Historial />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/pedido" element={<PedidoExpress />} />
         </Route>
       </Routes>
 
@@ -79,12 +81,9 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route
-        path="/welcome"
-        element={
-          !loading && user ? <Navigate to="/" replace /> : <Welcome />
-        }
-      />
+      {/* Public order route accessible to any customer without login */}
+      <Route path="/pedido" element={<PedidoExpress />} />
+      <Route path="/welcome" element={<Welcome />} />
       <Route
         path="/login"
         element={

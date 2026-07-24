@@ -12,7 +12,7 @@ export default function AppLayout({ onNewCompra, onNewVenta }: AppLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-300 overflow-x-hidden">
             <Sidebar
                 open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
@@ -23,8 +23,8 @@ export default function AppLayout({ onNewCompra, onNewVenta }: AppLayoutProps) {
                 onNewVenta={onNewVenta}
             />
 
-            <main className="pt-16 min-h-screen">
-                <div className="p-4 sm:p-6">
+            <main className="pt-16 min-h-screen lg:pl-[260px] transition-all duration-300">
+                <div className="p-3 sm:p-6 max-w-7xl mx-auto">
                     <Outlet />
                 </div>
             </main>

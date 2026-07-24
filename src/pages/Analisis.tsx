@@ -1,199 +1,303 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { formatearMoneda, formatearPorcentaje } from '@/lib/calculations';
-import { Search, Eye, Package } from 'lucide-react';
+import { formatearMoneda } from '@/lib/calculations';
+import { Search, Eye, Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useProductos } from '@/hooks/useProductos';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 
-const productosAnalisis = [
-    { nombre: 'Tomates', comprado: 200, vendido: 175, stock: 25, precioCompra: 2.00, precioVenta: 3.50, margen: 42.8, ganancia: 262.5, velocidad: 'Alta', recomendacion: 'Comprar más', color: '#10B981' },
-    { nombre: 'Zanahorias', comprado: 150, vendido: 130, stock: 20, precioCompra: 1.20, precioVenta: 2.00, margen: 40, ganancia: 104, velocidad: 'Media', recomendacion: 'Mantener', color: '#3B82F6' },
-    { nombre: 'Chiles', comprado: 80, vendido: 72, stock: 8, precioCompra: 3.00, precioVenta: 5.00, margen: 40, ganancia: 144, velocidad: 'Alta', recomendacion: 'Comprar más', color: '#8B5CF6' },
-    { nombre: 'Papas', comprado: 300, vendido: 280, stock: 20, precioCompra: 1.50, precioVenta: 2.20, margen: 31.8, ganancia: 196, velocidad: 'Alta', recomendacion: 'Mantener', color: '#F59E0B' },
-    { nombre: 'Cebollas', comprado: 180, vendido: 155, stock: 25, precioCompra: 1.40, precioVenta: 1.80, margen: 22.2, ganancia: 62, velocidad: 'Media', recomendacion: 'Monitorear', color: '#F97316' },
-    { nombre: 'Calabazas', comprado: 100, vendido: 82, stock: 18, precioCompra: 1.60, precioVenta: 2.10, margen: 23.8, ganancia: 41, velocidad: 'Lenta', recomendacion: 'Reducir', color: '#06B6D4' },
-    { nombre: 'Pimientos', comprado: 60, vendido: 48, stock: 12, precioCompra: 4.50, precioVenta: 5.50, margen: 18.2, ganancia: 48, velocidad: 'Lenta', recomendacion: 'Monitorear', color: '#EC4899' },
-    { nombre: 'Lechugas', comprado: 100, vendido: 85, stock: 15, precioCompra: 1.80, precioVenta: 2.00, margen: 10, ganancia: 17, velocidad: 'Lenta', recomendacion: 'Reducir', color: '#EF4444' },
-    { nombre: 'Espinacas', comprado: 50, vendido: 38, stock: 12, precioCompra: 2.50, precioVenta: 2.40, margen: -4.2, ganancia: -3.8, velocidad: 'Lenta', recomendacion: 'Evitar', color: '#DC2626' },
-];
-
-function getVelocidadIcon(v: string) {
-    if (v === 'Alta') return '🚀';
-    if (v === 'Media') return '➡️';
-    return '🐌';
-}
-
-function getRecColor(r: string) {
-    if (r === 'Comprar más') return 'text-emerald-600 bg-emerald-50';
-    if (r === 'Mantener') return 'text-blue-600 bg-blue-50';
-    if (r === 'Monitorear') return 'text-amber-600 bg-amber-50';
-    if (r === 'Reducir') return 'text-orange-600 bg-orange-50';
-    return 'text-red-600 bg-red-50';
-}
-
 export default function Analisis() {
+    const { productos } = useProductos();
     const [search, setSearch] = useState('');
-    const [selectedProduct, setSelectedProduct] = useState<typeof productosAnalisis[0] | null>(null);
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-    const filteredProducts = productosAnalisis.filter(p =>
-        p.nombre.toLowerCase().includes(search.toLowerCase())
+    // Calculate real executive financial KPIs based on registered products & losses
+    const financialSummary = useMemo(() => {
+        let totalVentasEstimadas = 0;
+        let totalCostoInversion = 0;
+        let totalPerdidasMerma = 0;
+        let totalKgMerma = 0;
+
+        productos.forEach(p => {
+            const stock = p.stockKg || 10;
+            const mermaKg = p.mermaAcumuladaKg || 0;
+            const costoUnit = p.costoPromedio || 10;
+            const precioVentaUnit = p.precioVenta || (costoUnit * 1.5);
+
+            totalVentasEstimadas += stock * precioVentaUnit;
+            totalCostoInversion += stock * costoUnit;
+            totalPerdidasMerma += mermaKg * costoUnit;
+            totalKgMerma += mermaKg;
+        });
+
+        const gananciaBruta = totalVentasEstimadas - totalCostoInversion;
+        const gananciaNetaReal = gananciaBruta - totalPerdidasMerma;
+        const margenNeto = totalVentasEstimadas > 0 ? (gananciaNetaReal / totalVentasEstimadas) * 100 : 0;
+
+        return {
+            totalVentasEstimadas,
+            totalCostoInversion,
+            totalPerdidasMerma,
+            totalKgMerma,
+            gananciaBruta,
+            gananciaNetaReal,
+            margenNeto
+        };
+    }, [productos]);
+
+    // Data for Profit vs Cost vs Loss Chart
+    const financialChartData = [
+        { nombre: 'Ventas Est.', monto: financialSummary.totalVentasEstimadas, color: '#10B981' },
+        { nombre: 'Costo Inversión', monto: financialSummary.totalCostoInversion, color: '#3B82F6' },
+        { nombre: 'Pérdidas (Merma)', monto: financialSummary.totalPerdidasMerma, color: '#EF4444' },
+        { nombre: 'Ganancia Neta', monto: Math.max(0, financialSummary.gananciaNetaReal), color: '#059669' },
+    ];
+
+    const filteredProducts = productos.filter(p =>
+        p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+        (p.categoria && p.categoria.toLowerCase().includes(search.toLowerCase()))
     );
 
-    const demoHistory = Array.from({ length: 14 }, (_, i) => {
-        const d = new Date(); d.setDate(d.getDate() - 13 + i);
-        return {
-            dia: `${d.getDate()}/${d.getMonth() + 1}`,
-            compra: selectedProduct ? selectedProduct.precioCompra * (0.9 + Math.random() * 0.2) : 0,
-            venta: selectedProduct ? selectedProduct.precioVenta * (0.9 + Math.random() * 0.2) : 0,
-        };
-    });
+    const selectedProduct = useMemo(() => {
+        return productos.find(p => p.id === selectedProductId);
+    }, [productos, selectedProductId]);
 
     return (
         <motion.div
-            className="space-y-6 max-w-[1400px] mx-auto"
+            className="space-y-6 max-w-[1400px] mx-auto pb-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >
             <div>
-                <h1 className="text-2xl font-bold text-gray-800">Análisis por Producto</h1>
-                <p className="text-sm text-gray-500 mt-1">Rendimiento detallado de cada producto</p>
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <BarChart3 className="text-emerald-600 w-6 h-6" />
+                    Análisis Financiero: Ganancias & Pérdidas
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Control de mermas, inversión en verdura y rentabilidad neta en tiempo real
+                </p>
             </div>
 
-            {/* Filters */}
-            <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <Input
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                placeholder="Buscar producto..."
-                                className="pl-10 rounded-xl"
-                            />
+            {/* Executive KPI Cards Header */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                                Ventas Estimadas
+                            </p>
+                            <h3 className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100 mt-1">
+                                {formatearMoneda(financialSummary.totalVentasEstimadas)}
+                            </h3>
+                            <p className="text-[11px] text-emerald-700 mt-1 flex items-center gap-1 font-medium">
+                                <TrendingUp size={14} /> Retorno de Inventario
+                            </p>
                         </div>
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                            <DollarSign size={24} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider">
+                                Costo Inversión (Compras)
+                            </p>
+                            <h3 className="text-2xl font-extrabold text-blue-900 dark:text-blue-100 mt-1">
+                                {formatearMoneda(financialSummary.totalCostoInversion)}
+                            </h3>
+                            <p className="text-[11px] text-blue-700 mt-1 flex items-center gap-1 font-medium">
+                                Capital invertido en verdura
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-sm">
+                            <TrendingDown size={24} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 shadow-xs">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-semibold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
+                                Pérdidas por Merma
+                            </p>
+                            <h3 className="text-2xl font-extrabold text-rose-900 dark:text-rose-100 mt-1">
+                                {formatearMoneda(financialSummary.totalPerdidasMerma)}
+                            </h3>
+                            <p className="text-[11px] text-rose-700 mt-1 flex items-center gap-1 font-medium">
+                                <AlertTriangle size={14} /> {financialSummary.totalKgMerma} kg desperdiciados
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-sm">
+                            <AlertTriangle size={24} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-teal-200 bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-md">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider">
+                                Ganancia Neta Real
+                            </p>
+                            <h3 className="text-2xl font-black text-white mt-1">
+                                {formatearMoneda(financialSummary.gananciaNetaReal)}
+                            </h3>
+                            <p className="text-[11px] text-teal-100 mt-1 font-bold">
+                                Margen neto: {financialSummary.margenNeto.toFixed(1)}%
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white font-bold">
+                            <PieChartIcon size={24} />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Recharts Financial Overview */}
+            <Card className="border border-slate-200 dark:border-gray-800 shadow-xs">
+                <CardContent className="p-5">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <span>Resumen Comparativo: Ventas vs Costos vs Pérdidas</span>
+                    </h3>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={financialChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="nombre" stroke="#64748B" tick={{ fontSize: 12 }} />
+                                <YAxis stroke="#64748B" tick={{ fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
+                                    formatter={(value: number | undefined) => [formatearMoneda(value ?? 0)]}
+                                />
+                                <Bar dataKey="monto" radius={[8, 8, 0, 0]}>
+                                    {financialChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Table */}
-            <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
+            {/* Product Table with Spoilage Breakdown */}
+            <Card className="border border-slate-200 dark:border-gray-800 shadow-xs">
+                <CardContent className="p-4 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                            Detalle por Producto & Mermas
+                        </h3>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Filtrar por verdura..."
+                                className="pl-10 rounded-xl h-9 text-xs"
+                            />
+                        </div>
+                    </div>
+
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-xs">
                             <thead>
-                                <tr className="border-b border-gray-100">
-                                    <th className="text-left py-3 px-2 text-gray-500 font-medium text-xs uppercase">Producto</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase">Comprado</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase">Vendido</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase">Stock</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase hidden md:table-cell">P. Compra</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase hidden md:table-cell">P. Venta</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase">Margen</th>
-                                    <th className="text-right py-3 px-2 text-gray-500 font-medium text-xs uppercase">Ganancia</th>
-                                    <th className="text-center py-3 px-2 text-gray-500 font-medium text-xs uppercase hidden lg:table-cell">Velocidad</th>
-                                    <th className="text-center py-3 px-2 text-gray-500 font-medium text-xs uppercase">Rec.</th>
-                                    <th className="text-center py-3 px-2 text-gray-500 font-medium text-xs uppercase">Ver</th>
+                                <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-500 font-semibold uppercase">
+                                    <th className="text-left py-3 px-2">Producto</th>
+                                    <th className="text-right py-3 px-2">P. Compra</th>
+                                    <th className="text-right py-3 px-2">P. Venta</th>
+                                    <th className="text-right py-3 px-2">Stock</th>
+                                    <th className="text-right py-3 px-2 text-rose-600">Merma/Pérdida</th>
+                                    <th className="text-right py-3 px-2">Ganancia Est.</th>
+                                    <th className="text-center py-3 px-2">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredProducts.map((p, i) => (
-                                    <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                                        <td className="py-3 px-2 font-medium text-gray-800">{p.nombre}</td>
-                                        <td className="py-3 px-2 text-right text-gray-600">{p.comprado}kg</td>
-                                        <td className="py-3 px-2 text-right text-gray-600">{p.vendido}kg</td>
-                                        <td className="py-3 px-2 text-right text-gray-600">{p.stock}kg</td>
-                                        <td className="py-3 px-2 text-right text-gray-600 hidden md:table-cell">{formatearMoneda(p.precioCompra)}</td>
-                                        <td className="py-3 px-2 text-right text-gray-600 hidden md:table-cell">{formatearMoneda(p.precioVenta)}</td>
-                                        <td className="py-3 px-2 text-right">
-                                            <span className={`font-semibold ${p.margen >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {formatearPorcentaje(p.margen)}
-                                            </span>
-                                        </td>
-                                        <td className={`py-3 px-2 text-right font-medium ${p.ganancia >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                            {p.ganancia >= 0 ? '+' : ''}{formatearMoneda(p.ganancia)}
-                                        </td>
-                                        <td className="py-3 px-2 text-center hidden lg:table-cell">
-                                            {getVelocidadIcon(p.velocidad)} {p.velocidad}
-                                        </td>
-                                        <td className="py-3 px-2 text-center">
-                                            <Badge className={`${getRecColor(p.recomendacion)} text-[10px]`}>
-                                                {p.recomendacion}
-                                            </Badge>
-                                        </td>
-                                        <td className="py-3 px-2 text-center">
-                                            <button
-                                                onClick={() => setSelectedProduct(p)}
-                                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                                            >
-                                                <Eye size={16} className="text-gray-500" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {filteredProducts.map((p) => {
+                                    const stock = p.stockKg || 0;
+                                    const merma = p.mermaAcumuladaKg || 0;
+                                    const gananciaEst = (p.precioVenta - p.costoPromedio) * stock - (merma * p.costoPromedio);
+
+                                    return (
+                                        <tr key={p.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <td className="py-3 px-2 font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-md overflow-hidden bg-slate-100 shrink-0">
+                                                    {p.imagenUrl && <img src={p.imagenUrl} alt={p.nombre} className="w-full h-full object-cover" />}
+                                                </div>
+                                                {p.nombre}
+                                            </td>
+                                            <td className="py-3 px-2 text-right text-slate-600">{formatearMoneda(p.costoPromedio)}</td>
+                                            <td className="py-3 px-2 text-right font-semibold text-emerald-600">{formatearMoneda(p.precioVenta)}</td>
+                                            <td className="py-3 px-2 text-right text-slate-700">{stock} {p.unidad}s</td>
+                                            <td className="py-3 px-2 text-right font-bold text-rose-600">
+                                                {merma > 0 ? `${merma} kg (${formatearMoneda(merma * p.costoPromedio)})` : '0 kg'}
+                                            </td>
+                                            <td className={`py-3 px-2 text-right font-extrabold ${gananciaEst >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {formatearMoneda(gananciaEst)}
+                                            </td>
+                                            <td className="py-3 px-2 text-center">
+                                                <button
+                                                    onClick={() => setSelectedProductId(p.id)}
+                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+                                                >
+                                                    <Eye size={14} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Product Detail Modal */}
-            <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-                <DialogContent className="sm:max-w-[650px] rounded-2xl max-h-[90vh] overflow-y-auto">
+            {/* Product detail popup */}
+            <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProductId(null)}>
+                <DialogContent className="sm:max-w-[450px] rounded-2xl">
                     {selectedProduct && (
-                        <>
+                        <div className="space-y-4">
                             <DialogHeader>
-                                <DialogTitle className="text-xl flex items-center gap-2">
-                                    <Package size={22} style={{ color: selectedProduct.color }} />
+                                <DialogTitle className="text-base font-bold flex items-center gap-2">
+                                    <Package className="text-emerald-600" size={20} />
                                     {selectedProduct.nombre}
-                                    <Badge className={`${getRecColor(selectedProduct.recomendacion)} ml-2`}>
-                                        {selectedProduct.recomendacion}
-                                    </Badge>
                                 </DialogTitle>
                             </DialogHeader>
 
-                            {/* Key metrics */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                                {[
-                                    { label: 'Margen', value: formatearPorcentaje(selectedProduct.margen), color: selectedProduct.margen >= 0 ? '#10B981' : '#EF4444' },
-                                    { label: 'Ganancia', value: formatearMoneda(selectedProduct.ganancia), color: selectedProduct.ganancia >= 0 ? '#10B981' : '#EF4444' },
-                                    { label: 'Merma Est.', value: `${selectedProduct.comprado - selectedProduct.vendido - selectedProduct.stock}kg`, color: '#F59E0B' },
-                                    { label: 'Stock', value: `${selectedProduct.stock}kg`, color: '#3B82F6' },
-                                ].map((m, i) => (
-                                    <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
-                                        <p className="text-xs text-gray-500">{m.label}</p>
-                                        <p className="text-lg font-bold" style={{ color: m.color }}>{m.value}</p>
-                                    </div>
-                                ))}
-                            </div>
+                            {selectedProduct.imagenUrl && (
+                                <div className="h-40 rounded-xl overflow-hidden bg-slate-100">
+                                    <img src={selectedProduct.imagenUrl} alt={selectedProduct.nombre} className="w-full h-full object-cover" />
+                                </div>
+                            )}
 
-                            {/* Price Evolution Chart */}
-                            <div className="mt-6">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Precio Compra vs Venta (14 días)</h4>
-                                <div className="h-48">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={demoHistory}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                            <XAxis dataKey="dia" tick={{ fontSize: 10 }} stroke="#9CA3AF" />
-                                            <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" />
-                                            <Tooltip
-                                                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                                formatter={(value: number | undefined) => [formatearMoneda(value ?? 0)]}
-                                            />
-                                            <Line type="monotone" dataKey="compra" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="Compra" />
-                                            <Line type="monotone" dataKey="venta" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="Venta" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="bg-slate-50 p-3 rounded-xl">
+                                    <p className="text-slate-500 font-medium">Precio Compra</p>
+                                    <p className="text-sm font-bold">{formatearMoneda(selectedProduct.costoPromedio)}</p>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-xl">
+                                    <p className="text-slate-500 font-medium">Precio Venta</p>
+                                    <p className="text-sm font-bold text-emerald-600">{formatearMoneda(selectedProduct.precioVenta)}</p>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-xl">
+                                    <p className="text-slate-500 font-medium">Stock en tienda</p>
+                                    <p className="text-sm font-bold">{selectedProduct.stockKg || 0} {selectedProduct.unidad}s</p>
+                                </div>
+                                <div className="bg-rose-50 p-3 rounded-xl">
+                                    <p className="text-rose-600 font-medium">Merma / Pérdida</p>
+                                    <p className="text-sm font-bold text-rose-700">{selectedProduct.mermaAcumuladaKg || 0} kg</p>
                                 </div>
                             </div>
-                        </>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>
