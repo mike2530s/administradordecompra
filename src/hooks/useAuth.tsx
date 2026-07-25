@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
-// Credenciales fijas
-const USUARIO = 'El Mike';
-const PASSWORD = 'Miguel1nmiguel0n';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.149:3001';
 const AUTH_STORAGE_KEY = 'verduras_pro_auth_user_v1';
 
 interface DemoUser {
@@ -15,7 +13,7 @@ interface AuthContextType {
     user: DemoUser | null;
     loading: boolean;
     signIn: (usuario: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, nombre: string, negocio: string) => Promise<void>;
+    signUp: (nombre: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -26,9 +24,8 @@ function getSavedUser(): DemoUser | null {
         const saved = localStorage.getItem(AUTH_STORAGE_KEY);
         if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
-    // Default logged in as Owner so reload never logs out
     return {
-        displayName: 'La Primavera (Dueña)',
+        displayName: 'La Primavera (Administrador)',
         email: 'vero@verduraspro.com',
         uid: 'owner-001',
     };
@@ -36,7 +33,7 @@ function getSavedUser(): DemoUser | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<DemoUser | null>(getSavedUser);
-    const [loading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -47,29 +44,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [user]);
 
     const signIn = async (usuario: string, password: string) => {
-        await new Promise(resolve => setTimeout(resolve, 400));
-        if (usuario === USUARIO && password === PASSWORD) {
+        setLoading(true);
+        try {
+            const res = await fetch(API_URL + '/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw { code: 'auth/wrong-password', message: data.error };
             const loggedUser = {
-                displayName: 'La Primavera (Dueña)',
+                displayName: data.displayName,
                 email: 'vero@verduraspro.com',
                 uid: 'owner-001',
             };
             setUser(loggedUser);
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedUser));
-        } else {
-            throw { code: 'auth/wrong-password' };
+        } finally {
+            setLoading(false);
         }
     };
 
-    const signUp = async (_email: string, _password: string, nombre: string, _negocio: string) => {
-        await new Promise(resolve => setTimeout(resolve, 400));
-        const loggedUser = {
-            displayName: nombre || 'La Primavera (Dueña)',
-            email: 'vero@verduraspro.com',
-            uid: 'owner-001',
-        };
-        setUser(loggedUser);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedUser));
+    const signUp = async (nombre: string, password: string) => {
+        setLoading(true);
+        try {
+            const res = await fetch(API_URL + '/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw { code: 'auth/register-failed', message: data.error };
+            const loggedUser = {
+                displayName: data.displayName,
+                email: 'vero@verduraspro.com',
+                uid: 'owner-001',
+            };
+            setUser(loggedUser);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedUser));
+        } finally {
+            setLoading(false);
+        }
     };
 
     const signOut = async () => {

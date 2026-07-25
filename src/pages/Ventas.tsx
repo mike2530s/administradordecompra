@@ -24,7 +24,7 @@ function loadVentasLocal(): VentaItem[] {
         const saved = localStorage.getItem(VENTAS_STORAGE_KEY);
         if (saved !== null) {
             const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (Array.isArray(parsed)) return parsed;
         }
     } catch { /* ignore */ }
     return [

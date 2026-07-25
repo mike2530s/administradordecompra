@@ -22,7 +22,7 @@ graph TD
         OrderView -->|2. Formatea y envía para recojo| WhatsApp[WhatsApp API / Tienda]
     end
 
-    subgraph Admin ["👩‍🌾 Dueña / Administración"]
+    subgraph Admin ["👩‍🌾 Administrador / Administración"]
         AdminDevice[Panel de Control] -->|3. Sube Foto del Día| ImageUploader[Componente ImageUploader]
     end
 
@@ -128,7 +128,7 @@ administradordecompra/
     │   ├── Dashboard.tsx       # Métrica general del negocio
     │   ├── Compras.tsx         # Registro de Entradas / Inversión
     │   ├── Ventas.tsx          # Registro de Salidas / Facturación
-    │   └── Login.tsx           # Inicio de sesión de la dueña del negocio
+    │   └── Login.tsx           # Inicio de sesión del administrador del negocio
     │
     └── types/                  # Definiciones de Tipos de TypeScript (Producto, Merma, Venta)
 ```
@@ -153,7 +153,7 @@ npm run dev
 ```
 La aplicación web estará disponible en `http://localhost:5173`.
 - **Formulario de Pedidos (Clientes):** `http://localhost:5173/pedido`
-- **Panel Administrativo (Dueña):** `http://localhost:5173/`
+- **Panel Administrativo (Administrador):** `http://localhost:5173/`
 
 ### 3. Iniciar el Servidor Local de Imágenes (Servidor Node.js)
 En una segunda consola:

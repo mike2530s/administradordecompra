@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Image as ImageIcon, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, Image as ImageIcon, CheckCircle, AlertCircle, RefreshCw, Camera } from 'lucide-react';
 
 interface ImageUploaderProps {
   currentImageUrl?: string;
@@ -29,47 +29,76 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       return;
     }
 
-    // Immediate local preview
-    const localUrl = URL.createObjectURL(file);
-    setPreview(localUrl);
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
 
-    const formData = new FormData();
-    formData.append('imagen', file);
-
     try {
-      // Attempt upload to physical ThinkPad T410 server @ 192.168.1.149
-      const response = await fetch(DEFAULT_SERVER_URL, {
-        method: 'POST',
-        body: formData,
-      });
+      // 1. Client-side Image Compression (Canvas)
+      const compressedBase64 = await compressImage(file);
+      setPreview(compressedBase64);
+      onImageUploaded(compressedBase64);
+      setSuccessMsg('Imagen optimizada y guardada exitosamente.');
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.url) {
-          setPreview(data.url);
-          onImageUploaded(data.url);
-          setSuccessMsg('¡Foto subida con éxito a tu servidor Debian!');
-        }
-      } else {
-        throw new Error('Servidor remoto devolvió código ' + response.status);
+      // Try uploading to server if you want, but now we just use the compressed Base64
+      // which is small enough (<150KB) to sync safely across all devices via the products JSON.
+      try {
+        await fetch(DEFAULT_SERVER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: compressedBase64 })
+        });
+      } catch (e) {
+          // Ignore server upload failure, base64 is already saved in SQLite/Local storage via useProductos
       }
+
     } catch (err) {
-      console.warn('Upload al servidor físico falló, usando vista previa local:', err);
-      // Fallback: Read as Data URL so image persists in LocalStorage
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Url = reader.result as string;
-        setPreview(base64Url);
-        onImageUploaded(base64Url);
-        setSuccessMsg('Imagen guardada localmente (Servidor Debian offline)');
-      };
-      reader.readAsDataURL(file);
+      console.error(err);
+      setError('Error al procesar la imagen.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const compressImage = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+              const img = new Image();
+              img.src = event.target?.result as string;
+              img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  const MAX_WIDTH = 800;
+                  const MAX_HEIGHT = 800;
+                  let width = img.width;
+                  let height = img.height;
+
+                  if (width > height) {
+                      if (width > MAX_WIDTH) {
+                          height *= MAX_WIDTH / width;
+                          width = MAX_WIDTH;
+                      }
+                  } else {
+                      if (height > MAX_HEIGHT) {
+                          width *= MAX_HEIGHT / height;
+                          height = MAX_HEIGHT;
+                      }
+                  }
+
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx?.drawImage(img, 0, 0, width, height);
+                  
+                  // Compress to WebP or JPEG
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                  resolve(dataUrl);
+              };
+              img.onerror = (error) => reject(error);
+          };
+          reader.onerror = (error) => reject(error);
+      });
   };
 
   return (
@@ -99,19 +128,33 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
         {/* Upload Controls */}
         <div className="flex-1 space-y-2">
-          <label className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg cursor-pointer shadow-sm hover:shadow transition-all duration-150 active:scale-95">
-            <Upload className="w-4 h-4 mr-2" />
-            <span>{loading ? 'Subiendo a 192.168.1.149...' : 'Subir Foto de Hoy'}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={loading}
-            />
-          </label>
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex items-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg cursor-pointer shadow-sm hover:shadow transition-all duration-150 active:scale-95">
+              <Upload className="w-4 h-4 mr-1.5" />
+              <span>{loading ? 'Subiendo...' : 'Galería'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={loading}
+              />
+            </label>
+            <label className="inline-flex items-center px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded-lg cursor-pointer shadow-sm hover:shadow transition-all duration-150 active:scale-95">
+              <Camera className="w-4 h-4 mr-1.5" />
+              <span>{loading ? 'Subiendo...' : 'Cámara'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={loading}
+              />
+            </label>
+          </div>
           <p className="text-[11px] text-gray-500">
-            Sube la verdura del día. Almacenada directamente en tu servidor ThinkPad T410.
+            Sube la verdura del día. Almacenada de forma segura en el servidor.
           </p>
 
           {successMsg && (

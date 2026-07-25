@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 // Producto
 export interface Producto {
     id: string;
@@ -10,8 +8,8 @@ export interface Producto {
     precioVentaPromedio: number;
     stockActual: number;
     activo: boolean;
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // Compra
@@ -23,10 +21,10 @@ export interface Compra {
     precioUnitario: number;
     total: number;
     proveedor: string;
-    fecha: Timestamp;
+    fecha: string;
     notas?: string;
     userId: string;
-    createdAt: Timestamp;
+    createdAt: string;
 }
 
 // Venta
@@ -42,9 +40,9 @@ export interface Venta {
     ganancia: number;
     margen: number;
     cliente?: string;
-    fecha: Timestamp;
+    fecha: string;
     userId: string;
-    createdAt: Timestamp;
+    createdAt: string;
 }
 
 // Inventario
@@ -53,9 +51,9 @@ export interface Inventario {
     productoId: string;
     stockActual: number;
     valorInventario: number;
-    ultimaCompra?: Timestamp;
-    ultimaVenta?: Timestamp;
-    updatedAt: Timestamp;
+    ultimaCompra?: string;
+    ultimaVenta?: string;
+    updatedAt: string;
 }
 
 // Usuario
@@ -64,7 +62,7 @@ export interface Usuario {
     nombre: string;
     negocio: string;
     email: string;
-    createdAt: Timestamp;
+    createdAt: string;
     configuracion: {
         moneda: string;
         notificaciones: boolean;

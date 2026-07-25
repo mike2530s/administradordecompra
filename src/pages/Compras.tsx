@@ -38,9 +38,26 @@ const comprasIniciales: CompraItem[] = [
     { id: '10', fecha: '08/07/2026', producto: 'Mango', cantidad: 15, unidad: 'kg', precio: 38.00, precioVenta: 45.00, totalImporte: 570.00, proveedor: 'Distribuidora Central' },
 ];
 
+const COMPRAS_STORAGE_KEY = 'verduras_pro_compras_v2';
+
+function loadComprasLocal(): CompraItem[] {
+    try {
+        const saved = localStorage.getItem(COMPRAS_STORAGE_KEY);
+        if (saved !== null) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch { /* ignore */ }
+    return comprasIniciales;
+}
+
 export default function Compras() {
     const { agregarProducto, productos, editarProducto } = useProductos();
-    const [compras, setCompras] = useState<CompraItem[]>(comprasIniciales);
+    const [compras, setCompras] = useState<CompraItem[]>(loadComprasLocal);
+
+    useEffect(() => {
+        localStorage.setItem(COMPRAS_STORAGE_KEY, JSON.stringify(compras));
+    }, [compras]);
     const [showScanner, setShowScanner] = useState(false);
     const [showManualModal, setShowManualModal] = useState(false);
 
@@ -61,7 +78,7 @@ export default function Compras() {
                 const res = await fetch(`${SERVER_URL}/api/compras`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
+                    if (Array.isArray(data)) {
                         const mapped: CompraItem[] = data.map(d => ({
                             id: d.id,
                             fecha: d.fecha,

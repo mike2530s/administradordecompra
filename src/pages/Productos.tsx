@@ -132,7 +132,7 @@ export default function Productos() {
                     <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         Catálogo & Fotos del Día
                         <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
-                            Servidor 192.168.1.149
+                            Servidor Principal
                         </span>
                     </h1>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -329,7 +329,7 @@ export default function Productos() {
                         <ImageUploader
                             currentImageUrl={imagenUrl}
                             onImageUploaded={(url) => setImagenUrl(url)}
-                            label="Foto del Día (Subir a 192.168.1.149)"
+                            label="Foto del Día"
                         />
 
                         <div className="space-y-1.5">

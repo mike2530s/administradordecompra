@@ -81,7 +81,7 @@ export const OfflineBanner: React.FC = () => {
             <div className="flex items-center space-x-2">
               <ServerOff className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
               <span>
-                <strong>Servidor Local ThinkPad T410 (192.168.1.149):</strong> Fuera de línea. Usando copia local en tu dispositivo.
+                <strong>Servidor Principal:</strong> Fuera de línea. Usando copia local en tu dispositivo.
               </span>
             </div>
 

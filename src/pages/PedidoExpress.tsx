@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useProductos, type Producto } from '@/hooks/useProductos';
+import { useTheme } from '@/hooks/useTheme';
 import OfflineBanner from '@/components/OfflineBanner';
-import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown, DollarSign, Scale } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Check, Sparkles, Clock, Phone, User, Store, ShieldCheck, Download, Smartphone, Banknote, CreditCard, Zap, Share2, ChevronUp, ChevronDown, DollarSign, Scale, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CartItem {
@@ -14,6 +15,7 @@ interface CartItem {
 
 export default function PedidoExpress() {
     const { productos } = useProductos();
+    const { theme, toggleTheme } = useTheme();
     
     // Cart States
     const [cartKg, setCartKg] = useState<Record<string, number>>({});
@@ -25,6 +27,14 @@ export default function PedidoExpress() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+    
+    // Skeleton loading state
+    const [isSimulatingLoad, setIsSimulatingLoad] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsSimulatingLoad(false), 800);
+        return () => clearTimeout(timer);
+    }, [categoriaFiltro]);
 
     // Form fields for Pickup in Store
     const [nombre, setNombre] = useState('');
@@ -274,12 +284,20 @@ export default function PedidoExpress() {
                         </div>
                     </div>
 
-                    <a
-                        href="/login"
-                        className="text-xs font-semibold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg border border-white/20 transition-all shrink-0"
-                    >
-                        Dueña
-                    </a>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                        >
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
+                        <a
+                            href="/login"
+                            className="text-xs font-semibold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg border border-white/20 transition-all shrink-0"
+                        >
+                            Administrador
+                        </a>
+                    </div>
                 </div>
             </header>
 
@@ -382,8 +400,32 @@ export default function PedidoExpress() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        {productosDisponibles.map((producto) => {
+                    {isSimulatingLoad ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-xs border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col animate-pulse">
+                                    <div className="h-36 sm:h-40 bg-slate-200 dark:bg-slate-700"></div>
+                                    <div className="p-3 bg-white dark:bg-slate-800 space-y-3 border-t border-slate-100 dark:border-slate-700">
+                                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-md w-3/4"></div>
+                                        <div className="flex justify-between gap-2 mt-2">
+                                            <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-md w-1/2"></div>
+                                            <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-md w-1/2"></div>
+                                        </div>
+                                        <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg mt-2"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : productosDisponibles.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl p-8 text-center text-slate-500 dark:text-slate-400 font-medium border border-slate-200 dark:border-slate-700 shadow-xs">
+                            <div className="w-16 h-16 mx-auto mb-3 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                                <ShoppingBag className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            No hay productos disponibles en esta categoría por el momento.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            {productosDisponibles.map((producto) => {
                             const modo = modoProducto[producto.id] || 'peso';
                             const cantKg = cartKg[producto.id] || 0;
                             const montoP = cartPesos[producto.id] || 0;
@@ -540,7 +582,8 @@ export default function PedidoExpress() {
                                 </motion.div>
                             );
                         })}
-                    </div>
+                        </div>
+                    )}
                 </section>
 
                 {/* Section 2: Pickup Form & Stylized Time Picker */}
